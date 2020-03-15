@@ -1,0 +1,5 @@
+/target
+src/examples
+*.glade~
+*.webm
+.gitconfig

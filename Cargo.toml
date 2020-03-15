@@ -1,0 +1,18 @@
+[package]
+name = "uilau"
+version = "0.1.0"
+authors = ["pajamity <pajamity@tutanota.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+gstreamer = "^0.15.4"
+glib = "0.9.3"
+gdk = "0.12.1"
+gtk = "0.8.1"
+gstreamer-video = "0.15.3"
+byte-slice-cast = "0.3.5"
+gstreamer-app = "0.15.4"
+gstreamer-audio = "0.15.3"
+gio = "0.8.1"
