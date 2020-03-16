@@ -1,40 +1,123 @@
 extern crate gtk;
 use gtk::prelude::*;
 
+extern crate gdk;
+use gdk::prelude::*;
+
 extern crate gio;
 use gio::prelude::*;
+
+extern crate gstreamer as gst;
+use gst::prelude::*;
+
+extern crate gstreamer_video as gst_video;
+use gst_video::prelude::*;
+
+use std::os::raw::c_void;
+use std::process;
 
 mod ui;
 use ui::UI;
 
 pub fn run() {
   gtk::init().unwrap();
+  gst::init().unwrap();
+
+  let pipeline = setup_gst();
 
   let app = gtk::Application::new(Some("net.uilau"), Default::default()).expect("Failed to initialize GTK app");
 
-  UI::new(&app);
+  let ui = UI::new(&app);
 
-  // app.connect_activate(|app| {
-  //   let window = ApplicationWindow::new(app);
-  //   window.set_title("uilau");
-  //   window.set_default_size(480, 360);
+  let w = ui.window.clone();
+  let m = ui.menu.clone();
+  let u = ui.clone();
+  let p = pipeline.clone();
+  app.connect_activate(move |app| {
+    // activate後にセットしないとwindow, widgetがあるのにappが終了してしまう
+    app.set_menubar(Some(&m));
+    app.add_window(&w);
+    
+    let about_action = gio::SimpleAction::new("about", None);
+    about_action.connect_activate(UI::create_about);
+    app.add_action(&about_action);
 
-  //   let button = Button::new_with_label("Click me");
-  //   button.connect_clicked(|_| {
-  //     println!("wow");
-  //   });
+    let open_media_action = gio::SimpleAction::new("open-media", None);
+    let uu = u.clone();
+    let pp = p.clone();
+    open_media_action.connect_activate(move |_,_| {
+      match uu.file_chooser_dialog() {
+        Some(uri) => {
+          println!("Opening {}", uri);
+          pp.set_state(gst::State::Null).unwrap();
+          pp
+            .set_property("uri", &uri)
+            .expect("Could not open uri");
+          pp.set_state(gst::State::Playing).unwrap();
+        }
+        None => return
+      }
+    });
 
-  //   let button2 = Button::new_with_label("Click me");
-  //   button.connect_clicked(|_| {
-  //     println!("wow");
-  //   });
+    app.add_action(&open_media_action);
 
-  //   window.add(&button);
-  //   window.add(&button2);
-  //   window.show_all();
-  // });
+    // Add handlers for video viewer
+    let overlay = p
+      .clone()
+      .dynamic_cast::<gst_video::VideoOverlay>()
+      .unwrap();
+
+    // ref: https://github.com/philn/glide/blob/e90432fa5718f6caa5885571f767318b4924559d/src/channel_player.rs#L159
+    u.video.connect_realize(move |v| {
+      let overlay = &overlay;
+      let gdk_window = v.get_window().unwrap();
+
+      if !gdk_window.ensure_native() {
+        println!("Can't create nativewindow");
+        process::exit(-1);
+      }
+
+      let display_type_name = gdk_window.get_display().get_type().name();
+      {
+        // Check if we're using X11 or ...
+        if display_type_name == "GdkX11Display" {
+          extern "C" {
+            pub fn gdk_x11_window_get_xid(
+              window: *mut glib::object::GObject,
+            ) -> *mut c_void;
+          }
+
+          #[allow(clippy::cast_ptr_alignment)]
+          unsafe {
+            let xid = gdk_x11_window_get_xid(gdk_window.as_ptr() as *mut _);
+            overlay.set_window_handle(xid as usize);
+          }
+        } else {
+          println!("Add support for display type '{}'", display_type_name);
+          process::exit(-1);
+        }
+      }
+    });
+
+    w.show_all();
+  });
+
+  pipeline
+    .set_state(gst::State::Playing)
+    .expect("Unable to set state");
 
   app.run(&[]);
+}
+
+fn setup_gst() -> gst::Element {
+  let playbin = gst::ElementFactory::make("playbin", Some("playbin")).unwrap();
+
+  let uri = "file:///usr/share/big-buck-bunny_trailer.webm";
+  playbin
+    .set_property("uri", &uri)
+    .unwrap();
+
+  playbin
 }
 
 mod tutorial5 {
@@ -183,7 +266,6 @@ mod tutorial5 {
       let pipeline = &pipeline;
       let lslider = &lslider;
 
-      // what is if let some?
       if let Some(dur) = pipeline.query_duration::<gst::ClockTime>() {
         let seconds = dur / gst::SECOND;
         // why
@@ -215,35 +297,9 @@ mod tutorial5 {
       .unwrap();
 
     video_window.connect_realize(move |video_window| {
-      let video_overlay = &video_overlay;
-      let gdk_window = video_window.get_window().unwrap();
+      
 
-      if !gdk_window.ensure_native() {
-        println!("Can't create nativewindow");
-        process::exit(-1);
-      }
-
-      let display_type_name = gdk_window.get_display().get_type().name();
-      {
-        // Check if we're using X11 or ...
-        if display_type_name == "GdkX11Display" {
-          extern "C" {
-              pub fn gdk_x11_window_get_xid(
-                  window: *mut glib::object::GObject,
-              ) -> *mut c_void;
-          }
-
-            #[allow(clippy::cast_ptr_alignment)]
-            unsafe {
-                let xid = gdk_x11_window_get_xid(gdk_window.as_ptr() as *mut _);
-                video_overlay.set_window_handle(xid as usize);
-            }
-        } else {
-            println!("Add support for display type '{}'", display_type_name);
-            process::exit(-1);
-        }
-
-      }
+    
     });
 
     video_window.connect_draw(|window, ctx| {

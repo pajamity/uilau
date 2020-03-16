@@ -4,8 +4,13 @@ use gtk::prelude::*;
 extern crate gio;
 use gio::prelude::*;
 
+use gio::{Menu, MenuItem};
+
+#[derive(Clone)]
 pub struct UI {
-  window: gtk::ApplicationWindow,
+  pub window: gtk::ApplicationWindow,
+  pub menu: gio::Menu,
+  pub video: gtk::DrawingArea,
 }
 
 impl UI {
@@ -14,6 +19,8 @@ impl UI {
     let builder = gtk::Builder::new_from_string(glade_src);
 
     let window: gtk::ApplicationWindow = builder.get_object("appwindow").unwrap();
+    window.set_title("uilau");
+    window.set_default_size(480, 360);
     
     window.connect_delete_event(move |_, _| {
       gtk::main_quit();
@@ -22,47 +29,73 @@ impl UI {
 
     let menu = Self::create_menu(); // associated function
     
-    let w = window.clone();
-    let m = menu.clone();
-    app.connect_activate(move |app| {
-      // activate後にセットしないとwindow, widgetがあるのにappが終了してしまう
-      app.set_menubar(Some(&m));
-      app.add_window(&w);
-      
-      let about_action = gio::SimpleAction::new("about", None);
-      about_action.connect_activate(move |_, _| {
-        println!("Hey");
-        Self::create_about();
-      });
-      app.add_action(&about_action);
-
-      w.show_all();
+    let video: gtk::DrawingArea = builder.get_object("video").unwrap();
+    video.connect_draw(|window, ctx| {
+      let alloc = window.get_allocation();
+      ctx.set_source_rgb(0.0, 0.0, 0.0);
+      ctx.rectangle(0.0, 0.0, alloc.width as f64, alloc.height as f64);
+      ctx.fill();
+      Inhibit(false)
     });
-    
+
     Self {
-      window: window,
+      window,
+      menu,
+      video,
     }
   }
 
   fn create_menu() -> gio::Menu {
-    use gio::{Menu, MenuItem};
-
     let menu = Menu::new();
 
+    Self::append_submenu_misc(&menu);
+    Self::append_submenu_file(&menu);
+
+    menu
+  }
+
+  fn append_submenu_file(menu: &gio::Menu) {
+    let submenu = Menu::new();
+    let open_media = MenuItem::new(Some("開く…"), Some("app.open-media"));
+    submenu.append_item(&open_media);
+
+    menu.append_submenu(Some("ファイル"), &submenu);
+  }
+
+  fn append_submenu_misc(menu: &gio::Menu) {
     let submenu_misc = Menu::new();
     let about = MenuItem::new(Some("uilauについて"), Some("app.about"));
     submenu_misc.append_item(&about);
 
     menu.append_submenu(Some("その他"), &submenu_misc);
-
-    menu
   }
 
-  fn create_about() {
+  pub fn create_about(_: &gio::SimpleAction, _: Option<&glib::Variant>) {
     let dialog = gtk::AboutDialog::new();
     dialog.set_title("uilau");
     dialog.set_comments(Some("WIP"));
     dialog.run();
     dialog.destroy();
+  }
+  
+  // ref: https://github.com/philn/glide/blob/master/src/ui_context.rs#L290
+  pub fn file_chooser_dialog(&self) -> Option<glib::GString> {
+    let dialog = gtk::FileChooserDialog::with_buttons(
+      Some("ファイルを選択してください"),
+      Some(&self.window),
+      gtk::FileChooserAction::Open,
+      &[("開く", gtk::ResponseType::Ok), ("キャンセル", gtk::ResponseType::Cancel)],
+    );
+
+    dialog.set_select_multiple(true);
+    let result = match dialog.run() {
+      gtk::ResponseType::Ok => {
+        dialog.get_uri()
+      }
+      _ => None
+    };
+    dialog.destroy();
+    
+    result
   }
 }
