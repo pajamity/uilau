@@ -11,6 +11,8 @@ pub struct UI {
   pub window: gtk::ApplicationWindow,
   pub menu: gio::Menu,
   pub video: gtk::DrawingArea,
+  // Controls
+  pub btn_playpause: gtk::Button,
 }
 
 impl UI {
@@ -30,18 +32,15 @@ impl UI {
     let menu = Self::create_menu(); // associated function
     
     let video: gtk::DrawingArea = builder.get_object("video").unwrap();
-    video.connect_draw(|window, ctx| {
-      let alloc = window.get_allocation();
-      ctx.set_source_rgb(0.0, 0.0, 0.0);
-      ctx.rectangle(0.0, 0.0, alloc.width as f64, alloc.height as f64);
-      ctx.fill();
-      Inhibit(false)
-    });
+
+    // Controls
+    let btn_playpause = builder.get_object("control-playpause").unwrap();
 
     Self {
       window,
       menu,
       video,
+      btn_playpause
     }
   }
 
