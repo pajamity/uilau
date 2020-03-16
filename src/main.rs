@@ -42,6 +42,13 @@ pub fn run() {
     about_action.connect_activate(UI::create_about);
     app.add_action(&about_action);
 
+    let quit_action = gio::SimpleAction::new("quit", None);
+    let a = app.clone();
+    quit_action.connect_activate(move |_, _| {
+      a.quit();
+    });
+    app.add_action(&quit_action);
+
     let open_media_action = gio::SimpleAction::new("open-media", None);
     let uu = u.clone();
     let pp = p.clone();

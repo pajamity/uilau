@@ -56,8 +56,12 @@ impl UI {
 
   fn append_submenu_file(menu: &gio::Menu) {
     let submenu = Menu::new();
+    
     let open_media = MenuItem::new(Some("開く…"), Some("app.open-media"));
+    let quit = MenuItem::new(Some("終了"), Some("app.quit"));
+
     submenu.append_item(&open_media);
+    submenu.append_item(&quit);
 
     menu.append_submenu(Some("ファイル"), &submenu);
   }
