@@ -20,38 +20,43 @@ use std::sync::{Arc, Mutex};
 mod ui;
 use ui::UI;
 
+mod player;
+use player::{PlayInfo};
+
 #[derive(Clone)]
-pub struct PlayInfo {
-  pub is_playing: bool,
+pub struct AppInfo {
+  pub playinfo: Arc<Mutex<PlayInfo>>,
+  pub ui: UI,
+  pub pipeline: gst::Element
 }
 
 pub fn run() {
   gtk::init().unwrap();
   gst::init().unwrap();
 
-  let pipeline = setup_gst();
+  let app = gtk::Application::new(Some("net.uilau"), Default::default()).expect("Failed to initialize GTK app");
+  
   let playinfo = Arc::new(Mutex::new(PlayInfo {
     is_playing: false,
   }));
-
-  let app = gtk::Application::new(Some("net.uilau"), Default::default()).expect("Failed to initialize GTK app");
-
   let ui = UI::new(&app);
+  let pipeline = setup_gst();
 
-  let w = ui.window.clone();
-  let m = ui.menu.clone();
-  let u = ui.clone();
-  let p = pipeline.clone();
-  let playinfo_weak = Arc::downgrade(&playinfo);
+  let info = AppInfo {
+    playinfo,
+    ui,
+    pipeline,
+  };
+
+  let info_ = info.clone();
+  let playinfo_weak = Arc::downgrade(&info.playinfo);
   app.connect_activate(move |app| {
-    let playinfo = match playinfo_weak.upgrade() {
-      Some(i) => i,
-      None => return
-    };
+    let info = &info_;
+    let (ui, pipeline) = (&info.ui, &info.pipeline);
     // activate後にセットしないとwindow, widgetがあるのにappが終了してしまう
-    app.set_menubar(Some(&m));
-    app.add_window(&w);
-    
+    app.set_menubar(Some(&ui.menu));
+    app.add_window(&ui.window);
+
     let about_action = gio::SimpleAction::new("about", None);
     about_action.connect_activate(UI::create_about);
     app.add_action(&about_action);
@@ -64,46 +69,28 @@ pub fn run() {
     app.add_action(&quit_action);
 
     let open_media_action = gio::SimpleAction::new("open-media", None);
-    let uu = u.clone();
-    let pp = p.clone();
+    let info_ = info.clone();
     open_media_action.connect_activate(move |_,_| {
-      match uu.file_chooser_dialog() {
-        Some(uri) => {
-          println!("Opening {}", uri);
-          pp.set_state(gst::State::Null).unwrap();
-          pp
-            .set_property("uri", &uri)
-            .expect("Could not open uri");
-          pp.set_state(gst::State::Playing).unwrap();
-        }
-        None => return
-      }
+      let info = &info_;
+      open_media(info);
     });
 
     app.add_action(&open_media_action);
 
     // Add handlers for video viewer
-    let overlay = p
+    let overlay = pipeline
       .clone()
       .dynamic_cast::<gst_video::VideoOverlay>()
       .unwrap();
-
-    // let playinfo_weak = Arc::downgrade(&playinfo);
-    let ppp = p.clone();
-    u.video.connect_draw(move |window, ctx| {
-      let p = &ppp;
-      // let playinfo = match playinfo_weak.upgrade() {
-      //   Some(p) => p,
-      //   None => return Inhibit(false)
-      // };
-      // if !playinfo.lock().unwrap().is_playing {
-      
+    let pipeline_ = pipeline.clone();
+    ui.video.connect_draw(move |window, ctx| {
+      let pipeline = &pipeline_;
       // ElementExt::get_state return value example:
       //   (Ok(Success), Playing, VoidPending)
       //   (Ok(Success), Paused, VoidPending)
+      // println!("{:?}", p.get_state(gst::SECOND * 3));
         
-      println!("{:?}", p.get_state(gst::SECOND * 3));
-      match p.get_state(gst::SECOND * 3) {
+      match pipeline.get_state(gst::SECOND * 3) {
         (_, gst::State::Playing, _) => {},
         (_, gst::State::Paused, _) => {},
         _ => {
@@ -118,7 +105,7 @@ pub fn run() {
     });
 
     // ref: https://github.com/philn/glide/blob/e90432fa5718f6caa5885571f767318b4924559d/src/channel_player.rs#L159
-    u.video.connect_realize(move |v| {
+    ui.video.connect_realize(move |v| {
       let overlay = &overlay;
       let gdk_window = v.get_window().unwrap();
 
@@ -151,38 +138,36 @@ pub fn run() {
 
     // Controls
     let playpause_action = gio::SimpleAction::new("playpause", None);
-    let a = app.clone();
-    let u = u.clone();
-    let p = p.clone();
-    let playinfo_weak = Arc::downgrade(&playinfo);
+    let info_ = info.clone();
     playpause_action.connect_activate(move |_, _| {
-      let playinfo = match playinfo_weak.upgrade() {
-        Some(p) => p,
-        None => return
-      };
+      let (playinfo, ui, pipeline) = (&info_.playinfo, &info_.ui, &info_.pipeline);
+      // let playinfo = match playinfo_weak.upgrade() {
+      //   Some(p) => p,
+      //   None => return
+      // };
       let mut playinfo = playinfo.lock().unwrap();
       if playinfo.is_playing {
-        p.set_state(gst::State::Paused).unwrap();
+        pipeline.set_state(gst::State::Paused).unwrap();
         let image = gtk::Image::new_from_icon_name(Some("media-playback-start"), gtk::IconSize::SmallToolbar);
-        u.btn_playpause.set_image(Some(&image));
+        ui.btn_playpause.set_image(Some(&image));
       } else {
-        p.set_state(gst::State::Playing).unwrap();
+        pipeline.set_state(gst::State::Playing).unwrap();
         let image = gtk::Image::new_from_icon_name(Some("media-playback-pause"), gtk::IconSize::SmallToolbar);
-        u.btn_playpause.set_image(Some(&image));
+        ui.btn_playpause.set_image(Some(&image));
       }
       playinfo.is_playing = !playinfo.is_playing;
     });
     app.add_action(&playpause_action);
 
-    w.show_all();
+    info.ui.window.show_all();
   });
 
-  pipeline
+  info.pipeline
     .set_state(gst::State::Playing)
     .expect("Unable to set state");
-  playinfo.lock().unwrap().is_playing = true;
+  info.playinfo.lock().unwrap().is_playing = true;
   let image = gtk::Image::new_from_icon_name(Some("media-playback-pause"), gtk::IconSize::SmallToolbar);
-  ui.btn_playpause.set_image(Some(&image));
+  info.ui.btn_playpause.set_image(Some(&image));
 
   app.run(&[]);
 }
@@ -196,6 +181,20 @@ fn setup_gst() -> gst::Element {
     .unwrap();
 
   playbin
+}
+
+fn open_media(info: &AppInfo) {
+  match info.ui.file_chooser_dialog() {
+    Some(uri) => {
+      println!("Opening {}", uri);
+      info.pipeline.set_state(gst::State::Null).unwrap();
+      info.pipeline
+        .set_property("uri", &uri)
+        .expect("Could not open uri");
+      info.pipeline.set_state(gst::State::Playing).unwrap();
+    }
+    None => return
+  }
 }
 
 mod tutorial5 {
@@ -373,20 +372,6 @@ mod tutorial5 {
       // why ?
       .dynamic_cast::<gst_video::VideoOverlay>()
       .unwrap();
-
-    video_window.connect_realize(move |video_window| {
-      
-
-    
-    });
-
-    video_window.connect_draw(|window, ctx| {
-      let alloc = window.get_allocation();
-      ctx.set_source_rgb(0.0, 0.0, 0.0);
-      ctx.rectangle(0.0, 0.0, alloc.width as f64, alloc.height as f64);
-      ctx.fill();
-      Inhibit(false)
-    });
 
     let streams_list = gtk::TextView::new();
     streams_list.set_editable(false);
