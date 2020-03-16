@@ -159,7 +159,39 @@ pub fn run() {
     });
     app.add_action(&playpause_action);
 
-    info.ui.window.show_all();
+    let info_ = info.clone();
+    let slider_update_signal_id = ui.slider.connect_value_changed(move |slider| {
+      let pipeline = &info_.pipeline;
+      let value = slider.get_value() as u64;
+      if pipeline
+        .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, value * gst::SECOND)
+        .is_err() {
+        eprintln!("Seeking failed");
+      }
+    });
+
+    ui.slider.set_draw_value(false);
+    let info_ = info.clone();
+    let timeout_id = gtk::timeout_add_seconds(1, move || {
+      let (playinfo, ui, pipeline) = (&info_.playinfo, &info_.ui, &info_.pipeline);
+
+      if let Some(dur) = pipeline.query_duration::<gst::ClockTime>() {
+        let seconds = dur / gst::SECOND;
+        // why
+        ui.slider.set_range(0.0, seconds.map(|v| v as f64).unwrap_or(0.0));
+      }
+
+      if let Some(pos) = pipeline.query_position::<gst::ClockTime>() {
+        let seconds = pos / gst::SECOND;
+        ui.slider.block_signal(&slider_update_signal_id);
+        ui.slider.set_value(seconds.map(|v| v as f64).unwrap_or(0.0));
+        ui.slider.unblock_signal(&slider_update_signal_id);
+      }
+
+      Continue(true)
+    });
+
+    ui.window.show_all();
   });
 
   info.pipeline

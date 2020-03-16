@@ -13,6 +13,7 @@ pub struct UI {
   pub video: gtk::DrawingArea,
   // Controls
   pub btn_playpause: gtk::Button,
+  pub slider: gtk::Scale,
 }
 
 impl UI {
@@ -35,12 +36,14 @@ impl UI {
 
     // Controls
     let btn_playpause = builder.get_object("control-playpause").unwrap();
+    let slider: gtk::Scale = builder.get_object("position-control").unwrap();
 
     Self {
       window,
       menu,
       video,
-      btn_playpause
+      btn_playpause,
+      slider
     }
   }
 

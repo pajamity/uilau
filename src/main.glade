@@ -2,6 +2,11 @@
 <!-- Generated with glade 3.22.2 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
+  <object class="GtkAdjustment" id="adjustment1">
+    <property name="upper">100</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
   <object class="GtkApplicationWindow" id="appwindow">
     <property name="can_focus">False</property>
     <child type="titlebar">
@@ -262,10 +267,11 @@
               <object class="GtkScale" id="position-control">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="adjustment">adjustment1</property>
                 <property name="round_digits">1</property>
               </object>
               <packing>
-                <property name="expand">False</property>
+                <property name="expand">True</property>
                 <property name="fill">True</property>
                 <property name="position">0</property>
               </packing>
