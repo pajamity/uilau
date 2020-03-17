@@ -10,6 +10,10 @@ use gio::prelude::*;
 extern crate gstreamer as gst;
 use gst::prelude::*;
 
+extern crate glib;
+use glib::prelude::*;
+use glib::translate::{ToGlib, FromGlib};
+
 extern crate gstreamer_video as gst_video;
 use gst_video::prelude::*;
 
@@ -27,7 +31,8 @@ use player::{PlayInfo};
 pub struct AppInfo {
   pub playinfo: Arc<Mutex<PlayInfo>>,
   pub ui: UI,
-  pub pipeline: gst::Element
+  pub pipeline: gst::Element,
+  pub timeout_id: Arc<Mutex<u32>>
 }
 
 pub fn run() {
@@ -46,6 +51,7 @@ pub fn run() {
     playinfo,
     ui,
     pipeline,
+    timeout_id: Arc::new(Mutex::new(0))
   };
 
   let info_ = info.clone();
@@ -172,7 +178,7 @@ pub fn run() {
 
     ui.slider.set_draw_value(false);
     let info_ = info.clone();
-    let timeout_id = gtk::timeout_add_seconds(1, move || {
+    let id = gtk::timeout_add_seconds(1, move || {
       let (playinfo, ui, pipeline) = (&info_.playinfo, &info_.ui, &info_.pipeline);
 
       if let Some(dur) = pipeline.query_duration::<gst::ClockTime>() {
@@ -190,6 +196,8 @@ pub fn run() {
 
       Continue(true)
     });
+    let mut timeout_id = info.timeout_id.lock().unwrap();
+    *timeout_id = id.to_glib();
 
     ui.window.show_all();
   });
@@ -200,6 +208,20 @@ pub fn run() {
   info.playinfo.lock().unwrap().is_playing = true;
   let image = gtk::Image::new_from_icon_name(Some("media-playback-pause"), gtk::IconSize::SmallToolbar);
   info.ui.btn_playpause.set_image(Some(&image));
+
+  let info_ = info.clone();
+  info.ui.window.connect_delete_event(move |_, _| {
+    gtk::main_quit();
+    let timeout_id = info_.timeout_id.lock().unwrap();
+    match *timeout_id {
+      0 => {}
+      id => {
+        glib::source_remove(glib::SourceId::from_glib(id))
+      }
+      _ => {}
+    }
+    Inhibit(false)
+  });
 
   app.run(&[]);
 }
@@ -234,11 +256,9 @@ mod tutorial5 {
   use std::process;
 
   extern crate glib;
-  use self::glib::object::ObjectType;
   use self::glib::*;
 
   extern crate gdk;
-  use self::gdk::prelude::*;
 
   extern crate gtk;
   use self::gtk::*;
@@ -317,85 +337,14 @@ mod tutorial5 {
       Inhibit(false)
     });
 
-    let play_button = gtk::Button::new_from_icon_name(
-      Some("media-playback-start"),
-      gtk::IconSize::SmallToolbar,
-    );
-    let pipeline = playbin.clone();
-    play_button.connect_clicked(move |_| {
-      let pipeline = &pipeline;
-      pipeline
-        .set_state(gst::State::Playing)
-        .expect("Could not set state");
-    });
-
-    let pause_button = gtk::Button::new_from_icon_name(
-      Some("media-playback-pause"),
-      gtk::IconSize::SmallToolbar,
-    );
-    let pipeline = playbin.clone();
-    pause_button.connect_clicked(move |_| {
-      let pipeline = &pipeline;
-      pipeline
-        .set_state(gst::State::Paused)
-        .expect("Could not set state"); 
-    });
-
     let stop_button = gtk::Button::new_from_icon_name(
       Some("media-playback-stop"),
       gtk::IconSize::SmallToolbar,
     );
     let pipeline = playbin.clone();
-    pause_button.connect_clicked(move |_| {
-      let pipeline = &pipeline;
-      pipeline
-        .set_state(gst::State::Paused)
-        .expect("Could not set state"); 
-    });
     
-    let slider = gtk::Scale::new_with_range(
-      gtk::Orientation::Horizontal,
-      0.0 as f64, 100.0 as f64, 1.0 as f64
-    );
-    let pipeline = playbin.clone();
-    let slider_update_signal_id = slider.connect_value_changed(move |slider| {
-      let pipeline = &pipeline;
-      let value = slider.get_value() as u64;
-      if pipeline
-        .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, value * gst::SECOND)
-        .is_err() {
-        eprintln!("Seeking failed");
-      }
-    });
-
-    slider.set_draw_value(false);
-    let pipeline = playbin.clone();
-    let lslider = slider.clone();
-    let timeout_id = gtk::timeout_add_seconds(1, move || {
-      let pipeline = &pipeline;
-      let lslider = &lslider;
-
-      if let Some(dur) = pipeline.query_duration::<gst::ClockTime>() {
-        let seconds = dur / gst::SECOND;
-        // why
-        lslider.set_range(0.0, seconds.map(|v| v as f64).unwrap_or(0.0));
-      }
-
-      if let Some(pos) = pipeline.query_position::<gst::ClockTime>() {
-        let seconds = pos / gst::SECOND;
-        lslider.block_signal(&slider_update_signal_id);
-        lslider.set_value(seconds.map(|v| v as f64).unwrap_or(0.0));
-        lslider.unblock_signal(&slider_update_signal_id);
-      }
-
-      Continue(true)
-    });
-
     let controls = Box::new(Orientation::Horizontal, 0);
-    controls.pack_start(&play_button, false, false, 0);
-    controls.pack_start(&pause_button, false, false, 0);
     controls.pack_start(&stop_button, false, false, 0);
-    controls.pack_start(&slider, true, true, 2);
 
     let video_window = DrawingArea::new();
 
@@ -449,7 +398,7 @@ mod tutorial5 {
 
     AppWindow {
       main_window,
-      timeout_id: Some(timeout_id)
+      timeout_id: None
     }
   }
 
