@@ -6,6 +6,11 @@ use gio::prelude::*;
 
 use gio::{Menu, MenuItem};
 
+use std::sync::{Arc, Mutex};
+
+mod extslider;
+use extslider::ExtSlider;
+
 #[derive(Clone)]
 pub struct UI {
   pub window: gtk::ApplicationWindow,
@@ -14,6 +19,7 @@ pub struct UI {
   // Controls
   pub btn_playpause: gtk::Button,
   pub slider: gtk::Scale,
+  pub sel_slider: ExtSlider
 }
 
 impl UI {
@@ -24,11 +30,6 @@ impl UI {
     let window: gtk::ApplicationWindow = builder.get_object("appwindow").unwrap();
     window.set_title("uilau");
     window.set_default_size(480, 360);
-    
-    window.connect_delete_event(move |_, _| {
-      gtk::main_quit();
-      Inhibit(false)
-    });
 
     let menu = Self::create_menu(); // associated function
     
@@ -38,12 +39,17 @@ impl UI {
     let btn_playpause = builder.get_object("control-playpause").unwrap();
     let slider: gtk::Scale = builder.get_object("position-control").unwrap();
 
+    let area = builder.get_object("test-scale").unwrap();
+    let sel_slider = ExtSlider::new(0.0, 0.0, 0.0, area);
+    sel_slider.set_handler();
+
     Self {
       window,
       menu,
       video,
       btn_playpause,
-      slider
+      slider,
+      sel_slider,
     }
   }
 
@@ -103,5 +109,16 @@ impl UI {
     dialog.destroy();
     
     result
+  }
+
+  pub fn refresh_slider(&self, duration: gst::ClockTime, position: gst::ClockTime) {
+    println!("{} {} xx", duration.mseconds().unwrap(), position.mseconds().unwrap());
+
+    let slider = &self.sel_slider;
+    *slider.start.lock().unwrap() = 0.0;
+    *slider.end.lock().unwrap() = duration.mseconds().unwrap() as f64;
+    *slider.value.lock().unwrap() = vec![(position.mseconds().unwrap() as f64, position.mseconds().unwrap() as f64)];
+
+    slider.drawing_area.queue_draw();
   }
 }

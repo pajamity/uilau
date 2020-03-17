@@ -59,7 +59,7 @@ pub fn run() {
   app.connect_activate(move |app| {
     let info = &info_;
     let (ui, pipeline) = (&info.ui, &info.pipeline);
-    // activate後にセットしないとwindow, widgetがあるのにappが終了してしまう
+    // apctivate後にセットしないとwindow, widgetがあるのにappが終了してしまう
     app.set_menubar(Some(&ui.menu));
     app.add_window(&ui.window);
 
@@ -193,6 +193,12 @@ pub fn run() {
         ui.slider.set_value(seconds.map(|v| v as f64).unwrap_or(0.0));
         ui.slider.unblock_signal(&slider_update_signal_id);
       }
+
+      if let (Some(dur), Some(pos))
+        = (pipeline.query_duration::<gst::ClockTime>(), 
+           pipeline.query_position::<gst::ClockTime>()) {
+        ui.refresh_slider(dur, pos);
+      } 
 
       Continue(true)
     });
@@ -341,18 +347,12 @@ mod tutorial5 {
       Some("media-playback-stop"),
       gtk::IconSize::SmallToolbar,
     );
-    let pipeline = playbin.clone();
     
     let controls = Box::new(Orientation::Horizontal, 0);
     controls.pack_start(&stop_button, false, false, 0);
 
     let video_window = DrawingArea::new();
 
-    let video_overlay = playbin
-      .clone()
-      // why ?
-      .dynamic_cast::<gst_video::VideoOverlay>()
-      .unwrap();
 
     let streams_list = gtk::TextView::new();
     streams_list.set_editable(false);
@@ -408,25 +408,6 @@ mod tutorial5 {
   }
 
   pub fn run() {
-    #[allow(clippy::eq_op)]
-    {
-      // if !cfg!(feature = "tutorial5-x11") && !cfg!(feature = "tutorial5-quartz") {
-      //   eprintln!("No GDK backend selected");
-      //   return;
-      // }
-    }
-
-    if let Err(err) = gtk::init() {
-      eprintln!("Failed to initialize GTK: {}", err);
-      return;
-    }
-
-    if let Err(err) = gst::init() {
-      eprintln!("Failed to initialize Gst: {}", err);
-      return;
-    }
-
-   
     let playbin = gst::ElementFactory::make("playbin", Some("playbin"))
     .expect("couldn't create playbin");
 
