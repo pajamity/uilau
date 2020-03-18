@@ -48,7 +48,7 @@ pub struct ExtSlider {
   pub value: Arc<Mutex<Vec<(f64, f64)>>>, // (start, end) = a selection
   pub drawing_area: gtk::DrawingArea,
   // Arc+Mutex+& reference: don't know what lifetime to use. 'static might be good for this because we own an instance of UI until the termination of this program. And this can't be cloned.
-  onchange_cb: Arc<Mutex<Option<&'static dyn Fn(f64, f64, Vec<(f64, f64)>)>>>,
+  // onchange_cb: Arc<Mutex<Option<&'static dyn Fn(f64, f64, Vec<(f64, f64)>)>>>,
   // boxed trait object (couldn't make this work):AccelLabelExt
   // onchange: Option<Box<dyn ClonableFn<Fn(f64, f64, Vec<(f64, f64)>)>>>,
 
@@ -66,7 +66,6 @@ impl ExtSlider {
       step: Arc::new(Mutex::new(step)),
       value: Arc::new(Mutex::new(vec![(start, start)])),
       drawing_area,
-      onchange_cb: Arc::new(Mutex::new(None)),
       onchange: Arc::new(Mutex::new(None))
     }
   }
@@ -109,7 +108,6 @@ impl ExtSlider {
     let start = Arc::clone(&self.start);
     let end = Arc::clone(&self.end);
     let value = Arc::clone(&self.value);
-    let onchange_cb = Arc::clone(&self.onchange_cb);
     let onchange = Arc::clone(&self.onchange);
     // Docs say get_coords() "Extracts the event surface relative x/y coordinates from an event". So do other get_*() methods.
     self.drawing_area.connect_button_press_event(move |area, event_button| {
@@ -147,15 +145,6 @@ impl ExtSlider {
             }
             None => {}
           }
-
-          match *onchange_cb.lock().unwrap() {
-            Some(cb) => {
-              // cb(x, *value); // causes error
-              // FIXME: below won't work when it comes about dealing with two or more selections.
-              cb(x, val, vec![(val, val)]);
-            }
-            None => {}
-          }
         }
         _ => return Inhibit(false)
       }
@@ -164,13 +153,9 @@ impl ExtSlider {
     });
   }
 
-  // Is 'static lifetime appropriate for this function? maybe. this callback is used in closure with 'static which GTK calls.
-  // Fn(x, val, values) -> ()
+  // this callback is used in closure with 'static which GTK calls.
+  // cb: Fn(x, val, values) -> ()
   // where x: coordination of x-axis, val: value which x corresponds to, values: vec that represents all the selection
-  pub fn on_change<F: Fn(f64, f64, Vec<(f64, f64)>) + 'static>(&self, cb: &'static F) {
-    *self.onchange_cb.lock().unwrap() = Some(cb);
-  }
-
   pub fn onchange(&self, cb: impl Fn(f64, f64, Vec<(f64, f64)>) + 'static) {
     *self.onchange.lock().unwrap() = Some(Box::new(cb));
   }

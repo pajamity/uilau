@@ -11,7 +11,6 @@ extern crate gstreamer as gst;
 use gst::prelude::*;
 
 extern crate glib;
-use glib::prelude::*;
 use glib::translate::{ToGlib, FromGlib};
 
 extern crate gstreamer_video as gst_video;
@@ -55,7 +54,6 @@ pub fn run() {
   };
 
   let info_ = info.clone();
-  let playinfo_weak = Arc::downgrade(&info.playinfo);
   app.connect_activate(move |app| {
     let info = &info_;
     let (ui, pipeline) = (&info.ui, &info.pipeline);
@@ -179,7 +177,7 @@ pub fn run() {
     ui.slider.set_draw_value(false);
     let info_ = info.clone();
     let id = gtk::timeout_add(500, move || {
-      let (playinfo, ui, pipeline) = (&info_.playinfo, &info_.ui, &info_.pipeline);
+      let (ui, pipeline) = (&info_.ui, &info_.pipeline);
 
       if let Some(dur) = pipeline.query_duration::<gst::ClockTime>() {
         let seconds = dur / gst::SECOND;
@@ -204,18 +202,6 @@ pub fn run() {
     });
     let mut timeout_id = info.timeout_id.lock().unwrap();
     *timeout_id = id.to_glib();
-
-    // let info_ = info.clone();
-    // ui.sel_slider.on_change(move |_, val, _| {    
-    //   // println!("xxx {} {} {:?}", x, val, value);
-            
-    //   let pipeline = &info_.pipeline;
-    //   if pipeline
-    //     .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, (val as u64) * gst::SECOND)
-    //     .is_err() {
-    //     eprintln!("Seeking failed");
-    //   }
-    // });
 
     let info_ = info.clone();
     ui.sel_slider.onchange(move |_, val, _| {    
@@ -246,7 +232,6 @@ pub fn run() {
       id => {
         glib::source_remove(glib::SourceId::from_glib(id))
       }
-      _ => {}
     }
     Inhibit(false)
   });
@@ -291,9 +276,6 @@ fn open_media(info: &AppInfo) {
 }
 
 mod tutorial5 {
-  use std::os::raw::c_void;
-  use std::process;
-
   extern crate glib;
   use self::glib::*;
 

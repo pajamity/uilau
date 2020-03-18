@@ -112,8 +112,6 @@ impl UI {
   }
 
   pub fn refresh_slider(&self, duration: gst::ClockTime, position: gst::ClockTime) {
-    println!("{} {} xx", duration.mseconds().unwrap(), position.mseconds().unwrap());
-
     let slider = &self.sel_slider;
     *slider.start.lock().unwrap() = 0.0;
     *slider.end.lock().unwrap() = duration.mseconds().unwrap() as f64;
