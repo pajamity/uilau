@@ -410,6 +410,73 @@ dependencies = [
 ]
 
 [[package]]
+name = "gstreamer-editing-services"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87fe5604d99b2d9294e4db3399f11d2229b7e3017ded05d5ca6f7144a6a8565d"
+dependencies = [
+ "bitflags",
+ "gio",
+ "gio-sys",
+ "glib",
+ "glib-sys",
+ "gobject-sys",
+ "gstreamer",
+ "gstreamer-base",
+ "gstreamer-editing-services-sys",
+ "gstreamer-pbutils",
+ "gstreamer-sys",
+ "libc",
+]
+
+[[package]]
+name = "gstreamer-editing-services-sys"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94a684a9b0b704e1a8953e32aaca61242c1e9e28a102968c63bec974fc00f11f"
+dependencies = [
+ "gio-sys",
+ "glib-sys",
+ "gobject-sys",
+ "gstreamer-base-sys",
+ "gstreamer-pbutils-sys",
+ "gstreamer-sys",
+ "libc",
+ "pkg-config",
+]
+
+[[package]]
+name = "gstreamer-pbutils"
+version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed246c95b8fe250a2897968e7f4f2c3a1177353e9bf2e609ca90d74022da10e1"
+dependencies = [
+ "bitflags",
+ "glib",
+ "glib-sys",
+ "gobject-sys",
+ "gstreamer",
+ "gstreamer-pbutils-sys",
+ "gstreamer-sys",
+ "libc",
+]
+
+[[package]]
+name = "gstreamer-pbutils-sys"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4eb7a9e68b2e09fa2889119ea4243c1cce83008a92d25d78f9324495707d8de8"
+dependencies = [
+ "glib-sys",
+ "gobject-sys",
+ "gstreamer-audio-sys",
+ "gstreamer-sys",
+ "gstreamer-video-sys",
+ "libc",
+ "pkg-config",
+]
+
+[[package]]
 name = "gstreamer-sys"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -673,6 +740,7 @@ dependencies = [
  "gstreamer",
  "gstreamer-app",
  "gstreamer-audio",
+ "gstreamer-editing-services",
  "gstreamer-video",
  "gtk",
 ]

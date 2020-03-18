@@ -16,6 +16,9 @@ use glib::translate::{ToGlib, FromGlib};
 extern crate gstreamer_video as gst_video;
 use gst_video::prelude::*;
 
+extern crate gstreamer_editing_services as ges;
+use ges::prelude::*;
+
 use std::os::raw::c_void;
 use std::process;
 use std::sync::{Arc, Mutex};
@@ -30,13 +33,16 @@ use player::{PlayInfo};
 pub struct AppInfo {
   pub playinfo: Arc<Mutex<PlayInfo>>,
   pub ui: UI,
-  pub pipeline: gst::Element,
-  pub timeout_id: Arc<Mutex<u32>>
+  // pub pipeline: gst::Element,
+  pub pipeline: ges::Pipeline,
+  pub timeout_id: Arc<Mutex<u32>>,
+  // pub timeline: ges::Timeline,
 }
 
 pub fn run() {
   gtk::init().unwrap();
   gst::init().unwrap();
+  ges::init().unwrap();
 
   let app = gtk::Application::new(Some("net.uilau"), Default::default()).expect("Failed to initialize GTK app");
   
@@ -44,12 +50,34 @@ pub fn run() {
     is_playing: false,
   }));
   let ui = UI::new(&app);
-  let pipeline = setup_gst();
+  // let pipeline = setup_gst();
+
+  // GES setup
+  let timeline = ges::Timeline::new_audio_video();
+  let layer = timeline.append_layer();
+  let ppl = ges::Pipeline::new();
+  ppl.set_timeline(&timeline).unwrap();
+
+  let clip = create_sample_clip();
+  layer.add_clip(&clip).unwrap();
+
+  let effect = ges::Effect::new("agingtv").expect("Failed to create effect");
+  clip.add(&effect).unwrap();
+
+  let asset = clip.get_asset().unwrap();
+  let duration = asset
+    .downcast::<ges::UriClipAsset>()
+    .unwrap()
+    .get_duration();
+  
+  clip.set_inpoint(duration / 2);
+  clip.set_duration(duration / 4);
 
   let info = AppInfo {
     playinfo,
     ui,
-    pipeline,
+    // pipeline,
+    pipeline: ppl,
     timeout_id: Arc::new(Mutex::new(0))
   };
 
@@ -233,6 +261,12 @@ pub fn run() {
   });
 
   app.run(&[]);
+}
+
+fn create_sample_clip() -> ges::UriClip {
+  let uri = "file:///usr/share/big-buck-bunny_trailer.webm";
+  let clip = ges::UriClip::new(uri).expect("failed to create clip.");
+  clip
 }
 
 fn setup_gst() -> gst::Element {
