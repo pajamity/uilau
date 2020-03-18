@@ -145,10 +145,6 @@ pub fn run() {
     let info_ = info.clone();
     playpause_action.connect_activate(move |_, _| {
       let (playinfo, ui, pipeline) = (&info_.playinfo, &info_.ui, &info_.pipeline);
-      // let playinfo = match playinfo_weak.upgrade() {
-      //   Some(p) => p,
-      //   None => return
-      // };
       let mut playinfo = playinfo.lock().unwrap();
       if playinfo.is_playing {
         pipeline.set_state(gst::State::Paused).unwrap();
@@ -238,17 +234,6 @@ pub fn run() {
 
   app.run(&[]);
 }
-
-// fn slider_on_change(x: f64, val: f64, values: Vec<(f64, f64)>) {
-//   // println!("xxx {} {} {:?}", x, val, value);
-        
-//   let pipeline = &info_.pipeline;
-//   if pipeline
-//     .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, (val as u64) * gst::SECOND)
-//     .is_err() {
-//     eprintln!("Seeking failed");
-//   }
-// }
 
 fn setup_gst() -> gst::Element {
   let playbin = gst::ElementFactory::make("playbin", Some("playbin")).unwrap();
