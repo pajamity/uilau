@@ -121,4 +121,5 @@ impl UI {
 
     slider.drawing_area.queue_draw();
   }
+
 }

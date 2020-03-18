@@ -178,7 +178,7 @@ pub fn run() {
 
     ui.slider.set_draw_value(false);
     let info_ = info.clone();
-    let id = gtk::timeout_add_seconds(1, move || {
+    let id = gtk::timeout_add(500, move || {
       let (playinfo, ui, pipeline) = (&info_.playinfo, &info_.ui, &info_.pipeline);
 
       if let Some(dur) = pipeline.query_duration::<gst::ClockTime>() {
@@ -204,6 +204,28 @@ pub fn run() {
     });
     let mut timeout_id = info.timeout_id.lock().unwrap();
     *timeout_id = id.to_glib();
+
+    // let info_ = info.clone();
+    // ui.sel_slider.on_change(move |_, val, _| {    
+    //   // println!("xxx {} {} {:?}", x, val, value);
+            
+    //   let pipeline = &info_.pipeline;
+    //   if pipeline
+    //     .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, (val as u64) * gst::SECOND)
+    //     .is_err() {
+    //     eprintln!("Seeking failed");
+    //   }
+    // });
+
+    let info_ = info.clone();
+    ui.sel_slider.onchange(move |_, val, _| {    
+      let pipeline = &info_.pipeline;
+      if pipeline
+        .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, (val as u64) * gst::MSECOND)
+        .is_err() {
+        eprintln!("Seeking failed");
+      }
+    });
 
     ui.window.show_all();
   });
@@ -231,6 +253,17 @@ pub fn run() {
 
   app.run(&[]);
 }
+
+// fn slider_on_change(x: f64, val: f64, values: Vec<(f64, f64)>) {
+//   // println!("xxx {} {} {:?}", x, val, value);
+        
+//   let pipeline = &info_.pipeline;
+//   if pipeline
+//     .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, (val as u64) * gst::SECOND)
+//     .is_err() {
+//     eprintln!("Seeking failed");
+//   }
+// }
 
 fn setup_gst() -> gst::Element {
   let playbin = gst::ElementFactory::make("playbin", Some("playbin")).unwrap();
