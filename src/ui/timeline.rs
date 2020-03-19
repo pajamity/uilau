@@ -25,7 +25,7 @@ impl Timeline {
     // let layout: gtk::Layout = builder.get_object("timeline-timescale").unwrap();
     let layout: gtk::DrawingArea = builder.get_object("timeline-timescale").unwrap();
 
-    let timescale = TimeScale::new(layout, 0 * gst::SECOND, 100 * gst::SECOND, 10);
+    let timescale = TimeScale::new(layout, 0 * gst::SECOND, 100 * gst::SECOND, 10.0);
   
     let s = Self {
       window,
