@@ -11,6 +11,9 @@ use std::sync::{Arc, Mutex};
 mod extslider;
 use extslider::ExtSlider;
 
+mod timeline;
+use timeline::Timeline;
+
 #[derive(Clone)]
 pub struct UI {
   pub window: gtk::ApplicationWindow,
@@ -19,7 +22,8 @@ pub struct UI {
   // Controls
   pub btn_playpause: gtk::Button,
   pub slider: gtk::Scale,
-  pub sel_slider: ExtSlider
+  pub sel_slider: ExtSlider,
+  pub tl: Timeline,
 }
 
 impl UI {
@@ -43,6 +47,10 @@ impl UI {
     let sel_slider = ExtSlider::new(0.0, 0.0, 0.0, area);
     sel_slider.set_handler();
 
+    // Timeline
+    let tl = Timeline::new(&builder);
+    tl.show();
+
     Self {
       window,
       menu,
@@ -50,6 +58,7 @@ impl UI {
       btn_playpause,
       slider,
       sel_slider,
+      tl,
     }
   }
 
