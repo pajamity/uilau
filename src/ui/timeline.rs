@@ -12,10 +12,18 @@ use std::sync::{Arc, Mutex};
 mod timescale;
 use timescale::TimeScale;
 
+mod layersview;
+use layersview::LayersView;
+
+mod layer_selector;
+use layer_selector::LayerSelector;
+
 #[derive(Clone)]
 pub struct Timeline {
   pub window: gtk::Window,
   pub timescale: TimeScale,
+  pub view: LayersView,
+  pub layer_sel: LayerSelector, 
 }
 
 impl Timeline {
@@ -27,10 +35,15 @@ impl Timeline {
 
     let timescale = TimeScale::new(layout, 0 * gst::SECOND, 100 * gst::SECOND, 10.0);
   
+    let view = LayersView::new(&builder);
+
+    let layer_sel = LayerSelector::new(&builder);
+
     let s = Self {
       window,
       timescale,
-
+      view,
+      layer_sel,
     };
 
 
