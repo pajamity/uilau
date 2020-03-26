@@ -18,6 +18,9 @@ use layersview::LayersView;
 mod layer_selector;
 use layer_selector::LayerSelector;
 
+mod objectview;
+use objectview::ObjectView;
+
 #[derive(Clone)]
 pub struct Timeline {
   pub window: gtk::Window,
@@ -35,7 +38,7 @@ impl Timeline {
 
     let timescale = TimeScale::new(layout, 0 * gst::SECOND, 100 * gst::SECOND, 10.0);
   
-    let view = LayersView::new(&builder);
+    let view = LayersView::new(&builder, 10.0);
 
     let layer_sel = LayerSelector::new(&builder);
 

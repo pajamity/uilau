@@ -240,12 +240,20 @@ pub fn run() {
     ui.window.show_all();
   });
 
+  // info.pipeline
+  //   .set_state(gst::State::Playing)
+  //   .expect("Unable to set state");
+  // info.playinfo.lock().unwrap().is_playing = true;
+  // let image = gtk::Image::new_from_icon_name(Some("media-playback-pause"), gtk::IconSize::SmallToolbar);
+  // info.ui.btn_playpause.set_image(Some(&image));
+  
   info.pipeline
-    .set_state(gst::State::Playing)
+    .set_state(gst::State::Paused)
     .expect("Unable to set state");
-  info.playinfo.lock().unwrap().is_playing = true;
-  let image = gtk::Image::new_from_icon_name(Some("media-playback-pause"), gtk::IconSize::SmallToolbar);
+  info.playinfo.lock().unwrap().is_playing = false;
+  let image = gtk::Image::new_from_icon_name(Some("media-playback-play"), gtk::IconSize::SmallToolbar);
   info.ui.btn_playpause.set_image(Some(&image));
+
 
   let info_ = info.clone();
   info.ui.window.connect_delete_event(move |_, _| {
