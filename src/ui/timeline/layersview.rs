@@ -29,7 +29,7 @@ impl LayersView {
       width_per_sec: Arc::new(Mutex::new(width_per_sec)),
     };
 
-    s.add_object(0, 300 * gst::SECOND, "hogehoge",ObjectType::Video);
+    s.add_object(0, 10 * gst::SECOND, "hogehoge",ObjectType::Video, 20 * gst::SECOND);
 
     for widget in s.layout.get_children() {
       println!("Child: {:?}", widget);
@@ -38,14 +38,12 @@ impl LayersView {
     s
   }
 
-  pub fn add_object(&self, layer_id: i32, time: gst::ClockTime, name: &str, obj_type: ObjectType, ) {
+  pub fn add_object(&self, layer_id: i32, start: gst::ClockTime, name: &str, obj_type: ObjectType, length: gst::ClockTime, ) {
     let wps = *self.width_per_sec.lock().unwrap();
 
-    let view = ObjectView::new(name, obj_type, (time.seconds().unwrap() as f64) * wps, self.layer_height);
+    let view = ObjectView::new(name, obj_type, (length.seconds().unwrap() as f64) * wps, self.layer_height);
 
-    // let xpos = time
-    let xpos = 30;
-    self.layout.put(&view.drawing_area, xpos, (self.layer_height * layer_id as f64) as i32);
+    self.layout.put(&view.drawing_area, (start.seconds().unwrap() as i32) * (wps as i32), (self.layer_height * layer_id as f64) as i32);
   }
 
   pub fn remove_object(&self) {

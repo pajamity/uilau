@@ -47,7 +47,6 @@ impl ObjectView {
     let width = s.width.clone();
     let height = s.height.clone();
     s.drawing_area.connect_draw(move |area, ctx| {
-      println!("be");
       let name = &*name.lock().unwrap(); // why String can't be copied?
       let width = *width.lock().unwrap();
       let height = *height.lock().unwrap();

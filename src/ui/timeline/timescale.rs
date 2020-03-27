@@ -7,6 +7,9 @@ use gdk::prelude::*;
 extern crate gio;
 use gio::prelude::*;
 
+extern crate glib;
+use glib::translate::{ToGlib, FromGlib};
+
 use std::sync::{Arc, Mutex};
 
 // Note that GtkLayout can be used in the similar way to GtkDrawingArea despite its name.
@@ -14,30 +17,58 @@ use std::sync::{Arc, Mutex};
 #[derive(Clone)]
 pub struct TimeScale {
   // pub layout: gtk::Layout,
-  pub layout: gtk::DrawingArea,
+  pub layout: Arc<gtk::DrawingArea>,
   pub start: Arc<Mutex<gst::ClockTime>>,
   pub end: Arc<Mutex<gst::ClockTime>>,
   pub width_per_sec: Arc<Mutex<f64>>,
 
+  layers_window: Arc<gtk::ScrolledWindow>,
+
   // drawn_start: Arc<Mutex<u64>>,
   pub drawn_end: Arc<Mutex<f64>>,
   pub xoff: Arc<Mutex<f64>>,
+
+  timeout_id: Arc<Mutex<u32>>,
 }
 
 impl TimeScale {
-  pub fn new(layout: gtk::DrawingArea, start: gst::ClockTime, end: gst::ClockTime, width_per_sec: f64) -> Self {
+  pub fn new(layout: gtk::DrawingArea, start: gst::ClockTime, end: gst::ClockTime, width_per_sec: f64, layers_window: Arc<gtk::ScrolledWindow>) -> Self {
     
     let s = Self {
-      layout,
+      layout: Arc::new(layout),
       start: Arc::new(Mutex::new(start)),
       end: Arc::new(Mutex::new(end)),
       width_per_sec: Arc::new(Mutex::new(width_per_sec)),
 
+      layers_window,
+
       drawn_end: Arc::new(Mutex::new(0.0)),
       xoff: Arc::new(Mutex::new(5.0)),
+
+      timeout_id: Arc::new(Mutex::new(0)),
     };
 
     s.set_draw_handler();
+
+    // FIXME: can disabling time-based redraw make this more efficient? (change to signal-based?)
+    let layout = s.layout.clone();
+    let id = gtk::timeout_add(100, move || {
+      layout.queue_draw();
+      Continue(true)
+    });
+    let timeout_id = s.timeout_id.clone();
+    *timeout_id.lock().unwrap() = id.to_glib();
+
+    let timeout_id = s.timeout_id.clone();
+    s.layout.connect_delete_event(move |_, _| {
+      match *timeout_id.lock().unwrap() {
+        0 => {}
+        id => {
+          glib::source_remove(glib::SourceId::from_glib(id))
+        }
+      }
+      Inhibit(false)
+    });
 
     s
   }
@@ -49,6 +80,7 @@ impl TimeScale {
     let width_per_sec = self.width_per_sec.clone();
     let drawn_end = self.drawn_end.clone();
     let xoff = self.xoff.clone();
+    let layers_window = self.layers_window.clone();
     self.layout.connect_draw(move |layout, ctx| {
       let start = *start.lock().unwrap();
       let end = *end.lock().unwrap();
@@ -97,6 +129,10 @@ impl TimeScale {
       
         if time > end { break }
       }
+
+      // sync position with LayersView
+      let adj = layers_window.get_hadjustment().unwrap().get_value();
+      println!("Offset: {}", adj);
 
       Inhibit(false)
     });
