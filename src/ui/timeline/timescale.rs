@@ -24,7 +24,7 @@ pub struct TimeScale {
 
   // drawn_start: Arc<Mutex<u64>>,
   pub drawn_end: Arc<Mutex<f64>>,
-  pub xoff: Arc<Mutex<f64>>,
+  pub xoff: Arc<Mutex<f64>>, // = horizontal adjustment
 }
 
 impl TimeScale {
@@ -39,7 +39,7 @@ impl TimeScale {
       // layers_window,
 
       drawn_end: Arc::new(Mutex::new(0.0)),
-      xoff: Arc::new(Mutex::new(5.0)),
+      xoff: Arc::new(Mutex::new(0.0)),
     };
 
     s.set_draw_handler();
@@ -76,15 +76,15 @@ impl TimeScale {
       // 1   2   3   4   5   6(end)
       // |   |   |   |   |   |     
       // -----------------------
-      //       ^xpos         
+      //       ^xoff         
       // then display:
       //         3   4   5   6(end) 
       //         |   |   |   |     
       //       -----------------------
-      // <---> ^xpos   
+      // <---> ^xoff   
       //  offset
 
-      let mut pos = xoff % width_per_sec + 10.0; // 10px = offset
+      let mut pos = xoff % width_per_sec + 0.0; // 10px = offset
       while pos < (alloc.width as f64 - 10.0) { // -10.0 is for right margin
         match k % 5 {
           0 => ctx.move_to(pos, 10.0),
@@ -112,5 +112,19 @@ impl TimeScale {
   // pub fn position_to_time(&self, pos: f64) -> gst::ClockTime {
   //   ((*self.xoff.lock().unwrap() + pos) / *self.width_per_sec.lock().unwrap()) * gst::SECOND
   // }
+
+  pub fn set_start(&self, val: gst::ClockTime) {
+    *self.start.lock().unwrap() = val;
+  }
+
+  pub fn set_xoff_time(&self, time: gst::ClockTime) {
+    let xoff = (time.seconds().unwrap() as f64) * *self.width_per_sec.lock().unwrap();
+    println!("XOFF: {}", xoff);
+    *self.xoff.lock().unwrap() = xoff;
+  }
+
+  pub fn set_xoff(&self, xoff: f64) {
+    *self.xoff.lock().unwrap() = xoff;
+  }
 
 }

@@ -28,7 +28,7 @@ use objectview::ObjectView;
 pub struct Timeline {
   pub window: gtk::Window,
   pub layers_window: Arc<gtk::ScrolledWindow>,
-  pub timescale: TimeScale,
+  pub timescale: Arc<TimeScale>,
   pub view: LayersView,
   pub layer_sel: LayerSelector, 
 
@@ -41,23 +41,29 @@ impl Timeline {
     let layers_window: gtk::ScrolledWindow = builder.get_object("timeline-layers-scroll").unwrap();
     let layers_window = Arc::new(layers_window);
 
+    let wps = 10.0;
+
     // We wanna each widget to be independent of its parent
     // let layout: gtk::Layout = builder.get_object("timeline-timescale").unwrap();
     let layout: gtk::DrawingArea = builder.get_object("timeline-timescale").unwrap();
 
-    let timescale = TimeScale::new(layout, 0 * gst::SECOND, 100 * gst::SECOND, 10.0);
+    let timescale = TimeScale::new(layout, 0 * gst::SECOND, 100 * gst::SECOND, wps);
+    let timescale = Arc::new(timescale);
   
-    let view = LayersView::new(&builder, 10.0);
+    let view = LayersView::new(&builder, wps);
 
     let layer_sel = LayerSelector::new(&builder);
 
     // FIXME: can disabling time-based redraw make this more efficient? (change to signal-based?)
     let layout = timescale.layout.clone();
     let layers_window_ = layers_window.clone();
+    let timescale_ = timescale.clone();
     let id = gtk::timeout_add(100, move || {
       // sync position with LayersView
       let adj = layers_window_.get_hadjustment().unwrap().get_value();
-      println!("Offset: {}", adj);
+      println!("Offset: {} {} {}", adj, adj/wps, (adj / wps) as u64);
+      timescale_.set_xoff(adj);
+      // timescale_.set_xoff_time(((adj / wps * 1000.0) as u64) * gst::MSECOND);
 
       layout.queue_draw();
       Continue(true)
