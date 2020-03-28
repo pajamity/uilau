@@ -8,40 +8,46 @@ extern crate gio;
 use gio::prelude::*;
 
 use std::sync::{Arc, Mutex};
+use gdk::Atom;
 
-#[derive(Clone)]
-pub enum ObjectType {
-  Video,
-  Audio,
-  Text,
-  Shape,
-  Filter
-}
+use super::super::super::object::{Object, ObjectKind};
 
 #[derive(Clone)]
 pub struct ObjectView {
   pub drawing_area: gtk::DrawingArea,
-  pub name: Arc<Mutex<String>>,
-  pub obj_type: Arc<ObjectType>,
+  pub id: Arc<Mutex<String>>, // must be unique; used for drag-and-drop operations
+  pub name: Arc<Mutex<String>>, // doesn't have to be unique
+  pub obj_type: Arc<ObjectKind>,
   pub width: Arc<Mutex<f64>>,
   pub height: Arc<Mutex<f64>>,
 }
 
 impl ObjectView {
-  pub fn new(name: &str, obj_type: ObjectType, width: f64, height: f64) -> Self {
+  pub fn new(id: &str, name: &str, obj_type: ObjectKind, width: f64, height: f64) -> Self {
     let drawing_area = gtk::DrawingAreaBuilder::new()
       .height_request(height as i32)
       .width_request(width as i32)
       .build();
 
+    let entries = gtk::TargetEntry::new("timeline-objectview", gtk::TargetFlags::SAME_APP, 0);
+    drawing_area.drag_source_set(gdk::ModifierType::BUTTON1_MASK, &[entries], gdk::DragAction::MOVE);
+
     let s = Self {
       drawing_area,
+      id: Arc::new(Mutex::new(id.to_string())),
       name: Arc::new(Mutex::new(name.to_string())),
       obj_type: Arc::new(obj_type),
       width: Arc::new(Mutex::new(width)),
       height: Arc::new(Mutex::new(height)),
     };
 
+    // DnD handler
+    let name = s.name.clone();
+    s.drawing_area.connect_drag_data_get(move |area, ctx, data, info, time| {
+      data.set_text(&*name.lock().unwrap());
+    });
+
+    // Draw handler
     let name = s.name.clone();
     let obj_type = s.obj_type.clone();
     let width = s.width.clone();
@@ -56,7 +62,8 @@ impl ObjectView {
       // Fill background
       // todo: gradation
       let background = match *obj_type {
-        ObjectType::Video => (0.0, 0.3, 1.0),
+        ObjectKind::Video => (0.0, 0.3, 1.0),
+        ObjectKind::Audio => (0.0, 0.6, 0.1),
         _ => (0.0, 0.0, 0.0)
       };
 

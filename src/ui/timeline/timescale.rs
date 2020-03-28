@@ -36,8 +36,6 @@ impl TimeScale {
       end: Arc::new(Mutex::new(end)),
       width_per_sec: Arc::new(Mutex::new(width_per_sec)),
 
-      // layers_window,
-
       drawn_end: Arc::new(Mutex::new(0.0)),
       xoff: Arc::new(Mutex::new(0.0)),
     };
@@ -84,7 +82,7 @@ impl TimeScale {
       // <---> ^xoff   
       //  offset
 
-      let mut pos = xoff % width_per_sec + 0.0; // 10px = offset
+      let mut pos = xoff % width_per_sec + 10.0; // 10px = offset
       while pos < (alloc.width as f64 - 10.0) { // -10.0 is for right margin
         match k % 5 {
           0 => ctx.move_to(pos, 10.0),

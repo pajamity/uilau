@@ -61,7 +61,7 @@ impl Timeline {
     let id = gtk::timeout_add(100, move || {
       // sync position with LayersView
       let adj = layers_window_.get_hadjustment().unwrap().get_value();
-      println!("Offset: {} {} {}", adj, adj/wps, (adj / wps) as u64);
+      // println!("Offset: {} {} {}", adj, adj/wps, (adj / wps) as u64);
       timescale_.set_xoff(adj);
       // timescale_.set_xoff_time(((adj / wps * 1000.0) as u64) * gst::MSECOND);
 

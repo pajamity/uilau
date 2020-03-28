@@ -29,6 +29,9 @@ use ui::UI;
 mod player;
 use player::{PlayInfo};
 
+mod object;
+use object::{Object, ObjectKind};
+
 #[derive(Clone)]
 pub struct AppInfo {
   pub playinfo: Arc<Mutex<PlayInfo>>,
