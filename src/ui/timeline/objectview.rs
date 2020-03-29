@@ -29,7 +29,7 @@ impl ObjectView {
       .width_request(width as i32)
       .build();
 
-    let entries = gtk::TargetEntry::new("timeline-objectview", gtk::TargetFlags::SAME_APP, 0);
+    let entries = gtk::TargetEntry::new("text/plain", gtk::TargetFlags::SAME_APP, 0);
     drawing_area.drag_source_set(gdk::ModifierType::BUTTON1_MASK, &[entries], gdk::DragAction::MOVE);
 
     let s = Self {
@@ -42,9 +42,9 @@ impl ObjectView {
     };
 
     // DnD handler
-    let name = s.name.clone();
+    let id = s.id.clone();
     s.drawing_area.connect_drag_data_get(move |area, ctx, data, info, time| {
-      data.set_text(&*name.lock().unwrap());
+      data.set_text(&*id.lock().unwrap());
     });
 
     // Draw handler
