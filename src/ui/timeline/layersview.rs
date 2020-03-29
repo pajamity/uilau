@@ -125,8 +125,9 @@ impl LayersView {
 
       let id = &data.get_text().expect("No text attached to selection data");
 
-      let layer_id = objects[id.as_str()].layer_id.lock().unwrap();
-      layout.move_(&object_views[id.as_str()].drawing_area, x, (*layer_height * *layer_id as f64) as i32);
+      let layer_id = ((y as f64) / *layer_height).floor();
+      // let layer_id = objects[id.as_str()].layer_id.lock().unwrap();
+      layout.move_(&object_views[id.as_str()].drawing_area, x, (*layer_height * layer_id as f64) as i32);
 
       // update object's start etc
     });
