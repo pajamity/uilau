@@ -20,6 +20,7 @@ pub struct ObjectView {
   pub obj_type: Arc<ObjectKind>,
   pub width: Arc<Mutex<f64>>,
   pub height: Arc<Mutex<f64>>,
+  // pub object: Arc<Mutex<Object>>,
 }
 
 impl ObjectView {
@@ -39,6 +40,7 @@ impl ObjectView {
       obj_type: Arc::new(obj_type),
       width: Arc::new(Mutex::new(width)),
       height: Arc::new(Mutex::new(height)),
+      // object
     };
 
     // DnD handler

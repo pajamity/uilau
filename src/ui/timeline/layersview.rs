@@ -63,6 +63,8 @@ impl LayersView {
   }
 
   pub fn add_object(&mut self, obj: Object) {
+    // let obj = Arc::new(Mutex::new(obj));
+
     {
       let wps = *self.width_per_sec.lock().unwrap();
       let len = *obj.length.lock().unwrap();
@@ -116,20 +118,23 @@ impl LayersView {
   fn set_drop_handler(&self) {
     let object_views_ = self.object_views.clone();
     let objects_ = self.objects.clone();
-    // let wps_ = self.width_per_sec.clone();
+    let wps_ = self.width_per_sec.clone();
     let layer_height = self.layer_height.clone();
     self.layout.connect_drag_data_received(move |layout, _ctx, x, y, data, _info, _time| {
       let object_views = &*object_views_.lock().unwrap();
       let objects = &*objects_.lock().unwrap();
-      // let wps = *wps_.lock().unwrap();
+      let wps = *wps_.lock().unwrap();
 
       let id = &data.get_text().expect("No text attached to selection data");
 
-      let layer_id = ((y as f64) / *layer_height).floor();
+      let layer_id = ((y as f64) / *layer_height).floor() as i32;
       // let layer_id = objects[id.as_str()].layer_id.lock().unwrap();
       layout.move_(&object_views[id.as_str()].drawing_area, x, (*layer_height * layer_id as f64) as i32);
 
       // update object's start etc
+      let mut obj = &objects[id.as_str()];
+      *obj.start.lock().unwrap() = ((x as f64 / wps) * 1000.0) as u64 * gst::MSECOND;
+      *obj.layer_id.lock().unwrap() = layer_id;
     });
   }
 }
