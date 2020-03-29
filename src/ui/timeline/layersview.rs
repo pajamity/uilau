@@ -52,7 +52,7 @@ impl LayersView {
     s.add_object(obj1);
     s.add_object(obj2);
 
-
+    s.set_draw_handler();
     s.set_drop_handler();
 
     for widget in s.layout.get_children() {
@@ -95,15 +95,33 @@ impl LayersView {
 
   }
 
+  fn set_draw_handler(&self) {
+    let layer_height = self.layer_height.clone();
+    self.layout.connect_draw(move |layout, ctx| {
+
+      // FIXME: needs to be flexible
+      for i in 1..5 {
+        // boundaries for layers
+        ctx.set_source_rgb(0.2, 0.2, 0.2);
+        ctx.set_line_width(1.0);
+        ctx.move_to(0.0, *layer_height * (i as f64));
+        ctx.line_to(1000.0, *layer_height * (i as f64)); // FIXME
+        ctx.stroke();
+      }
+
+      Inhibit(false)
+    });
+  }
+
   fn set_drop_handler(&self) {
     let object_views_ = self.object_views.clone();
     let objects_ = self.objects.clone();
-    let wps_ = self.width_per_sec.clone();
+    // let wps_ = self.width_per_sec.clone();
     let layer_height = self.layer_height.clone();
     self.layout.connect_drag_data_received(move |layout, _ctx, x, y, data, _info, _time| {
       let object_views = &*object_views_.lock().unwrap();
       let objects = &*objects_.lock().unwrap();
-      let wps = *wps_.lock().unwrap();
+      // let wps = *wps_.lock().unwrap();
 
       let id = &data.get_text().expect("No text attached to selection data");
 
