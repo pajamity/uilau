@@ -32,6 +32,12 @@ use player::{PlayInfo};
 mod object;
 use object::{Object, ObjectKind};
 
+mod project;
+use project::Project;
+
+mod layer;
+use layer::Layer;
+
 #[derive(Clone)]
 pub struct AppInfo {
   pub playinfo: Arc<Mutex<PlayInfo>>,
@@ -53,34 +59,14 @@ pub fn run() {
     is_playing: false,
   }));
   let ui = UI::new(&app);
-  // let pipeline = setup_gst();
 
   // GES setup
-  let timeline = ges::Timeline::new_audio_video();
-  let layer = timeline.append_layer();
-  let ppl = ges::Pipeline::new();
-  ppl.set_timeline(&timeline).unwrap();
-
-  let clip = create_sample_clip();
-  layer.add_clip(&clip).unwrap();
-
-  let effect = ges::Effect::new("agingtv").expect("Failed to create effect");
-  clip.add(&effect).unwrap();
-
-  let asset = clip.get_asset().unwrap();
-  let duration = asset
-    .downcast::<ges::UriClipAsset>()
-    .unwrap()
-    .get_duration();
-  
-  clip.set_inpoint(duration / 2);
-  clip.set_duration(duration / 4);
+  let proj= setup_sample_project();
 
   let info = AppInfo {
     playinfo,
     ui,
-    // pipeline,
-    pipeline: ppl,
+    pipeline: proj.ges_pipeline,
     timeout_id: Arc::new(Mutex::new(0))
   };
 
@@ -280,15 +266,30 @@ fn create_sample_clip() -> ges::UriClip {
   clip
 }
 
-fn setup_gst() -> gst::Element {
-  let playbin = gst::ElementFactory::make("playbin", Some("playbin")).unwrap();
+fn setup_sample_project() -> Project {
+  let mut proj = Project::new();
+  let layer_ = proj.add_layer();
+  let layer = &mut *layer_.lock().unwrap();
 
-  let uri = "file:///usr/share/big-buck-bunny_trailer.webm";
-  playbin
-    .set_property("uri", &uri)
-    .unwrap();
+  let clip = create_sample_clip();
+  let obj = Object::new_from_uri_clip("v1", "bigbunny", 10 * gst::SECOND, 0, clip);
+  layer.add_object(Arc::new(Mutex::new(obj)));
 
-  playbin
+  // layer.add_clip(&clip).unwrap();
+
+  // let effect = ges::Effect::new("agingtv").expect("Failed to create effect");
+  // clip.add(&effect).unwrap();
+
+  // let asset = clip.get_asset().unwrap();
+  // let duration = asset
+  //   .downcast::<ges::UriClipAsset>()
+  //   .unwrap()
+  //   .get_duration();
+  //
+  // clip.set_inpoint(duration / 2);
+  // clip.set_duration(duration / 4);
+
+  proj
 }
 
 fn open_media(info: &AppInfo) {

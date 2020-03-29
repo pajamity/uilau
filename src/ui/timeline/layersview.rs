@@ -132,7 +132,7 @@ impl LayersView {
       layout.move_(&object_views[id.as_str()].drawing_area, x, (*layer_height * layer_id as f64) as i32);
 
       // update object's start etc
-      let mut obj = &objects[id.as_str()];
+      let obj = &objects[id.as_str()];
       *obj.start.lock().unwrap() = ((x as f64 / wps) * 1000.0) as u64 * gst::MSECOND;
       *obj.layer_id.lock().unwrap() = layer_id;
     });
