@@ -33,19 +33,12 @@ impl LayersView {
     let entries = gtk::TargetEntry::new("text/plain", gtk::TargetFlags::SAME_APP, 0);
     layout.drag_dest_set(gtk::DestDefaults::ALL, &[entries], gdk::DragAction::MOVE);
 
-    // let objects = HashMap::new();
     let object_views = HashMap::new();
-
-    // FIXME: sample objects for testing purpose
-    // let obj1 = Object::new("video1", "hogehoge", ObjectKind::Video, 20 * gst::SECOND, 10 * gst::SECOND, 0);
-    // let obj2 = Object::new("audio1", "piyopiyo", ObjectKind::Audio, 10 * gst::SECOND, 15 * gst::SECOND, 1);
-
 
     let mut s = Self {
       layout,
       layer_height: Arc::new(30.0),
       width_per_sec: Arc::new(Mutex::new(width_per_sec)),
-      // objects: Arc::new(Mutex::new(objects)),
       object_views: Arc::new(Mutex::new(object_views)),
       layers,
     };
@@ -60,9 +53,6 @@ impl LayersView {
         s.add_object(obj.clone());
       }
     }
-
-    // s.add_object(obj1);
-    // s.add_object(obj2);
 
     s.set_draw_handler();
     s.set_drop_handler();
@@ -82,13 +72,12 @@ impl LayersView {
     let name = &*obj.name.lock().unwrap();
     let start = *obj.start.lock().unwrap();
     let layer_id = *obj.layer_id.lock().unwrap();
-    let id = &*obj.id.lock().unwrap();
 
-    let view = ObjectView::new(obj_.clone(), id, name, *obj.kind, (len.seconds().unwrap() as f64) * wps, *self.layer_height);
+    let view = ObjectView::new(obj_.clone(), &obj.id, name, *obj.kind, (len.seconds().unwrap() as f64) * wps, *self.layer_height);
     self.layout.put(&view.drawing_area, (start.seconds().unwrap() as i32) * (wps as i32), (*self.layer_height * layer_id as f64) as i32);
     {
       let obj_views = self.object_views.clone();
-      obj_views.lock().unwrap().insert(String::from(id), view);
+      obj_views.lock().unwrap().insert(String::from(&obj.id), view);
     }
   }
 
@@ -167,7 +156,7 @@ impl LayersView {
 
       if let Some(obj_to_move) = obj_to_move {
         let obj_to_move_ = &*obj_to_move.lock().unwrap();
-        src_layer.unwrap().lock().unwrap().remove_object(&*obj_to_move_.id.lock().unwrap()); // obtain mutable lock separately since the lock used for layer_ is immutable
+        src_layer.unwrap().lock().unwrap().remove_object(&obj_to_move_.id); // obtain mutable lock separately since the lock used for layer_ is immutable
 
         *obj_to_move_.start.lock().unwrap() = ((x as f64 / wps) * 1000.0) as u64 * gst::MSECOND;
         *obj_to_move_.layer_id.lock().unwrap() = layer_id;

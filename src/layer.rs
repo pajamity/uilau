@@ -39,7 +39,7 @@ impl Layer {
     }
 
     let objs = &mut *self.objects.lock().unwrap();
-    let id = String::from(&*obj.id.lock().unwrap());
+    let id = String::from(&obj.id);
     objs.insert(id, obj_);
   }
 

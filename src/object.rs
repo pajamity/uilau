@@ -18,7 +18,8 @@ pub enum ObjectKind {
 
 #[derive(Clone)]
 pub struct Object {
-  pub id: Arc<Mutex<String>>,
+  // pub id: Arc<Mutex<String>>,
+  pub id: String,
   pub name: Arc<Mutex<String>>,
   pub kind: Arc<ObjectKind>,
   pub length: Arc<Mutex<gst::ClockTime>>,
@@ -32,7 +33,8 @@ pub struct Object {
 impl Object {
   pub fn new(id: &str, name: &str, kind: ObjectKind, length: gst::ClockTime, start: gst::ClockTime, layer_id: i32) -> Self {
     let s = Self {
-      id: Arc::new(Mutex::new(id.to_string())),
+      // id: Arc::new(Mutex::new(id.to_string())),
+      id: id.to_string(),
       name: Arc::new(Mutex::new(name.to_string())),
       kind: Arc::new(kind),
       length: Arc::new(Mutex::new(length)),
@@ -53,7 +55,7 @@ impl Object {
       .get_duration();
 
     Self {
-      id: Arc::new(Mutex::new(id.to_string())),
+      id: id.to_string(),
       name: Arc::new(Mutex::new(name.to_string())),
       kind: Arc::new(ObjectKind::Clip),
       length: Arc::new(Mutex::new(length)),
