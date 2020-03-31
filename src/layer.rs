@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 
 extern crate gstreamer_editing_services as ges;
 use ges::prelude::*;
@@ -28,7 +28,9 @@ impl Layer {
   // Layer "owns" objects
   pub fn add_object(&mut self, object: Arc<Mutex<Object>>) {
     let obj_ = object.clone();
-    let obj = &*object.lock().unwrap();
+    let mut obj = &*object.lock().unwrap();
+    // self cannot own self itself
+    // obj.layer = Some(Weak::new(Mutex::new(self)));
 
     match obj.kind {
       ObjectKind::Clip => {
@@ -45,9 +47,18 @@ impl Layer {
 
   pub fn remove_object(&mut self, id: &str) {
     let objs = &mut *self.objects.lock().unwrap();
-    objs.remove(&String::from(id));
+    let obj = objs.remove(&String::from(id));
 
-    // TODO: remove from ges_layer
+    if let Some(obj) = obj {
+      let obj = &*obj.lock().unwrap();
+      match obj.kind {
+        ObjectKind::Clip => {
+          let clip = obj.clip.as_ref().expect("No clip is set");
+          self.ges_layer.remove_clip(clip).unwrap();
+        }
+        _ => {}
+      }
+    }
   }
 
 }

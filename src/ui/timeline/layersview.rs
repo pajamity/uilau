@@ -15,7 +15,6 @@ pub struct LayersView {
   pub layout: gtk::Layout,
   pub layer_height: Arc<f64>,
   pub width_per_sec: Arc<Mutex<f64>>,
-  // pub objects: Arc<Mutex<HashMap<String, Object>>>,
   pub object_views: Arc<Mutex<HashMap<String, ObjectView>>>,
   pub layers: Arc<Mutex<Vec<Arc<Mutex<Layer>>>>>,
 }
@@ -113,57 +112,64 @@ impl LayersView {
 
   fn set_drop_handler(&self) {
     let object_views_ = self.object_views.clone();
-    // let objects_ = self.objects.clone();
     let layers_ = self.layers.clone();
     let wps_ = self.width_per_sec.clone();
     let layer_height = self.layer_height.clone();
     self.layout.connect_drag_data_received(move |layout, _ctx, x, y, data, _info, _time| {
-
       let object_views = &*object_views_.lock().unwrap();
-      // let objects = &*objects_.lock().unwrap();
       let wps = *wps_.lock().unwrap();
-      let layers = &mut *layers_.lock().unwrap();
 
       let id = &data.get_text().expect("No text attached to selection data");
       println!("receiving...: {}", id);
       let layer_id = ((y as f64) / *layer_height).floor() as i32;
 
+      let layers = &mut *layers_.lock().unwrap();
+      let dest_layer = &mut *layers[layer_id as usize].lock().unwrap();
+
+      let obj_to_move = &object_views[id.as_str()].object;
+      let obj_to_move_arc = match obj_to_move.upgrade() {
+        Some(o) => o,
+        None => panic!("No object found"),
+      };
+      let obj_to_move_arc_ = obj_to_move_arc.clone();
+      let obj_to_move = &*obj_to_move_arc_.lock().unwrap();
+
       // move to dest layer
-      let mut obj_to_move = None;
-      let mut src_layer = None;
+      // let mut obj_to_move = None;
+      // let mut src_layer = None;
 
-      let layers___ = layers_.clone();
-      let layers__ = &mut *layers___.lock().unwrap();
-      let dest_layer = &mut *layers__[layer_id as usize].lock().unwrap();
+      // let layers___ = layers_.clone();
+      // let layers__ = &mut *layers___.lock().unwrap();
+      //
+      // for layer in layers {
+      //   let layer_ = &mut *layer.lock().unwrap();
+      //   let objs_ = &*layer_.objects.lock().unwrap();
+      //   let obj = objs_.get(id.as_str());
+      //   if let Some(obj) = obj { // if object with specific id is found
+      //     obj_to_move = Some(obj.clone());
+      //     src_layer = Some(layer.clone());
+      //     break
+      //   }
+      // }
 
-      for layer in layers {
-      // for layer in &*layers_.clone().lock().unwrap() {
-        let layer_ = &mut *layer.lock().unwrap();
-        let objs_ = &*layer_.objects.lock().unwrap();
-        let obj = objs_.get(id.as_str());
-        if let Some(obj) = obj { // if object with specific id is found
-          obj_to_move = Some(obj.clone());
-          src_layer = Some(layer.clone());
-          break
+      // let obj_to_move_ = &*obj_to_move.lock().unwrap();
+      if let Some(src_layer) = &obj_to_move.layer {
+        match src_layer.upgrade() {
+          Some(s) => {
+            let s = &mut *s.lock().unwrap();
+            s.remove_object(&obj_to_move.id);
+          }
+          None => panic!("No layer was found")
         }
       }
 
-      if let Some(obj_to_move) = obj_to_move {
-        let obj_to_move_ = &*obj_to_move.lock().unwrap();
-        src_layer.unwrap().lock().unwrap().remove_object(&obj_to_move_.id); // obtain mutable lock separately since the lock used for layer_ is immutable
+      *obj_to_move.start.lock().unwrap() = ((x as f64 / wps) * 1000.0) as u64 * gst::MSECOND;
+      *obj_to_move.layer_id.lock().unwrap() = layer_id;
+      dest_layer.add_object(obj_to_move_arc);
 
-        *obj_to_move_.start.lock().unwrap() = ((x as f64 / wps) * 1000.0) as u64 * gst::MSECOND;
-        *obj_to_move_.layer_id.lock().unwrap() = layer_id;
-        dest_layer.add_object(obj_to_move.clone());
-      } else {
-        eprintln!("Object to be moved is not found.");
-      }
-
-      // let layer_id = objects[id.as_str()].layer_id.lock().unwrap();
       layout.move_(&object_views[id.as_str()].drawing_area, x, (*layer_height * layer_id as f64) as i32);
 
-      // update object's start etc
-      // let obj = &objects[id.as_str()];
+      // modify its start
     });
   }
 }

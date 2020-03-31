@@ -4,7 +4,9 @@ use gst::prelude::*;
 extern crate gstreamer_editing_services as ges;
 use ges::prelude::*;
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
+
+use super::layer::Layer;
 
 #[derive(Clone, Copy)]
 pub enum ObjectKind {
@@ -23,11 +25,13 @@ pub struct Object {
   pub name: Arc<Mutex<String>>,
   pub kind: ObjectKind,
   pub length: Arc<Mutex<gst::ClockTime>>,
-  pub clip: Option<ges::UriClip>, // or Arc<Mutex<Option<Clip>>> ?
+  pub clip: Option<ges::UriClip>,
 
   // move to "objectPlacement" ?
   pub start: Arc<Mutex<gst::ClockTime>>,
   pub layer_id: Arc<Mutex<i32>>,
+
+  pub layer: Option<Weak<Mutex<Layer>>>,
 }
 
 impl Object {
@@ -41,6 +45,7 @@ impl Object {
 
       start: Arc::new(Mutex::new(start)),
       layer_id: Arc::new(Mutex::new(layer_id)),
+      layer: None,
     };
 
     s
@@ -62,7 +67,13 @@ impl Object {
 
       start: Arc::new(Mutex::new(start)),
       layer_id: Arc::new(Mutex::new(layer_id)),
+
+      layer: None
     }
+  }
+
+  pub fn set_layer(&mut self, layer: Arc<Mutex<Layer>>) {
+    self.layer = Some(Arc::downgrade(&layer));
   }
 }
 

@@ -270,7 +270,8 @@ fn setup_sample_project() -> Project {
   let layer = &mut *layer_.lock().unwrap();
 
   let clip = create_sample_clip();
-  let obj = Object::new_from_uri_clip("v1", "bigbunny", 10 * gst::SECOND, 0, clip);
+  let mut obj = Object::new_from_uri_clip("v1", "bigbunny", 10 * gst::SECOND, 0, clip);
+  obj.set_layer(layer_.clone());
   layer.add_object(Arc::new(Mutex::new(obj)));
 
   // let effect = ges::Effect::new("agingtv").expect("Failed to create effect");
