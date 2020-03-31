@@ -21,7 +21,7 @@ pub struct Object {
   // pub id: Arc<Mutex<String>>,
   pub id: String,
   pub name: Arc<Mutex<String>>,
-  pub kind: Arc<ObjectKind>,
+  pub kind: ObjectKind,
   pub length: Arc<Mutex<gst::ClockTime>>,
   pub clip: Option<ges::UriClip>, // or Arc<Mutex<Option<Clip>>> ?
 
@@ -33,10 +33,9 @@ pub struct Object {
 impl Object {
   pub fn new(id: &str, name: &str, kind: ObjectKind, length: gst::ClockTime, start: gst::ClockTime, layer_id: i32) -> Self {
     let s = Self {
-      // id: Arc::new(Mutex::new(id.to_string())),
       id: id.to_string(),
       name: Arc::new(Mutex::new(name.to_string())),
-      kind: Arc::new(kind),
+      kind,
       length: Arc::new(Mutex::new(length)),
       clip: None,
 
@@ -57,7 +56,7 @@ impl Object {
     Self {
       id: id.to_string(),
       name: Arc::new(Mutex::new(name.to_string())),
-      kind: Arc::new(ObjectKind::Clip),
+      kind: ObjectKind::Clip,
       length: Arc::new(Mutex::new(length)),
       clip: Some(clip),
 

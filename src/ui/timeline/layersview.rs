@@ -67,7 +67,7 @@ impl LayersView {
     let start = *obj.start.lock().unwrap();
     let layer_id = *obj.layer_id.lock().unwrap();
 
-    let view = ObjectView::new(obj_.clone(), &obj.id, name, *obj.kind, (len.seconds().unwrap() as f64) * wps, *self.layer_height);
+    let view = ObjectView::new(obj_.clone(), &obj.id, name, obj.kind, (len.seconds().unwrap() as f64) * wps, *self.layer_height);
     self.layout.put(&view.drawing_area, (start.seconds().unwrap() as i32) * (wps as i32), (*self.layer_height * layer_id as f64) as i32);
     {
       let obj_views = self.object_views.clone();

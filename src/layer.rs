@@ -30,7 +30,7 @@ impl Layer {
     let obj_ = object.clone();
     let obj = &*object.lock().unwrap();
 
-    match *obj.kind {
+    match obj.kind {
       ObjectKind::Clip => {
         let clip = obj.clip.as_ref().expect("No clip is set");
         self.ges_layer.add_clip(clip).unwrap();
@@ -47,7 +47,7 @@ impl Layer {
     let objs = &mut *self.objects.lock().unwrap();
     objs.remove(&String::from(id));
 
-    // remove from ges_layer
+    // TODO: remove from ges_layer
   }
 
 }
