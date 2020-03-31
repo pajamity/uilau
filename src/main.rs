@@ -54,14 +54,12 @@ pub fn run() {
   ges::init().unwrap();
 
   let app = gtk::Application::new(Some("net.uilau"), Default::default()).expect("Failed to initialize GTK app");
-  
+  let proj = setup_sample_project();
   let playinfo = Arc::new(Mutex::new(PlayInfo {
     is_playing: false,
   }));
-  let ui = UI::new(&app);
+  let ui = UI::new(&app, &proj);
 
-  // GES setup
-  let proj= setup_sample_project();
 
   let info = AppInfo {
     playinfo,
@@ -274,8 +272,6 @@ fn setup_sample_project() -> Project {
   let clip = create_sample_clip();
   let obj = Object::new_from_uri_clip("v1", "bigbunny", 10 * gst::SECOND, 0, clip);
   layer.add_object(Arc::new(Mutex::new(obj)));
-
-  // layer.add_clip(&clip).unwrap();
 
   // let effect = ges::Effect::new("agingtv").expect("Failed to create effect");
   // clip.add(&effect).unwrap();

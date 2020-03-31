@@ -7,7 +7,7 @@ use gdk::prelude::*;
 extern crate gio;
 use gio::prelude::*;
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 use gdk::Atom;
 
 use super::super::super::object::{Object, ObjectKind};
@@ -20,11 +20,12 @@ pub struct ObjectView {
   pub obj_type: Arc<ObjectKind>,
   pub width: Arc<Mutex<f64>>,
   pub height: Arc<Mutex<f64>>,
-  // pub object: Arc<Mutex<Object>>,
+
+  pub object: Weak<Mutex<Object>>, // reference to object (Weak)
 }
 
 impl ObjectView {
-  pub fn new(id: &str, name: &str, obj_type: ObjectKind, width: f64, height: f64) -> Self {
+  pub fn new(object: Arc<Mutex<Object>>, id: &str, name: &str, obj_type: ObjectKind, width: f64, height: f64) -> Self {
     let drawing_area = gtk::DrawingAreaBuilder::new()
       .height_request(height as i32)
       .width_request(width as i32)
@@ -40,7 +41,8 @@ impl ObjectView {
       obj_type: Arc::new(obj_type),
       width: Arc::new(Mutex::new(width)),
       height: Arc::new(Mutex::new(height)),
-      // object
+
+      object: Arc::downgrade(&object)
     };
 
     // DnD handler

@@ -14,6 +14,8 @@ use extslider::ExtSlider;
 mod timeline;
 use timeline::Timeline;
 
+use super::project::Project;
+
 #[derive(Clone)]
 pub struct UI {
   pub window: gtk::ApplicationWindow,
@@ -27,7 +29,7 @@ pub struct UI {
 }
 
 impl UI {
-  pub fn new(app: &gtk::Application) -> Self {
+  pub fn new(app: &gtk::Application, proj: &Project) -> Self {
     let glade_src = include_str!("main.glade");
     let builder = gtk::Builder::new_from_string(glade_src);
 
@@ -48,7 +50,7 @@ impl UI {
     sel_slider.set_handler();
 
     // Timeline
-    let tl = Timeline::new(&builder);
+    let tl = Timeline::new(&builder, &proj);
     tl.show();
 
     Self {

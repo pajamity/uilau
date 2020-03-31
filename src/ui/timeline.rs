@@ -24,6 +24,8 @@ use layer_selector::LayerSelector;
 mod objectview;
 use objectview::ObjectView;
 
+use super::super::project::Project;
+
 #[derive(Clone)]
 pub struct Timeline {
   pub window: gtk::Window,
@@ -36,7 +38,7 @@ pub struct Timeline {
 }
 
 impl Timeline {
-  pub fn new(builder: &gtk::Builder) -> Self {
+  pub fn new(builder: &gtk::Builder, proj: &Project) -> Self {
     let window: gtk::Window = builder.get_object("timeline").unwrap();
     let layers_window: gtk::ScrolledWindow = builder.get_object("timeline-layers-scroll").unwrap();
     let layers_window = Arc::new(layers_window);
@@ -49,8 +51,8 @@ impl Timeline {
 
     let timescale = TimeScale::new(layout, 0 * gst::SECOND, 100 * gst::SECOND, wps);
     let timescale = Arc::new(timescale);
-  
-    let view = LayersView::new(&builder, wps);
+
+    let view = LayersView::new(&builder, wps, proj.layers.clone());
 
     let layer_sel = LayerSelector::new(&builder);
 
