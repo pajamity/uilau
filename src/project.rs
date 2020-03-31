@@ -1,9 +1,3 @@
-extern crate gstreamer as gst;
-use gst::prelude::*;
-
-extern crate glib;
-use glib::translate::{ToGlib, FromGlib};
-
 extern crate gstreamer_video as gst_video;
 use gst_video::prelude::*;
 
