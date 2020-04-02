@@ -29,7 +29,6 @@ pub struct Object {
 
   // move to "objectPlacement" ?
   pub start: Arc<Mutex<gst::ClockTime>>,
-  pub layer_id: Arc<Mutex<i32>>,
 
   pub layer: Option<Weak<Mutex<Layer>>>,
 }
@@ -44,7 +43,6 @@ impl Object {
       clip: None,
 
       start: Arc::new(Mutex::new(start)),
-      layer_id: Arc::new(Mutex::new(layer_id)),
       layer: None,
     };
 
@@ -66,8 +64,6 @@ impl Object {
       clip: Some(clip),
 
       start: Arc::new(Mutex::new(start)),
-      layer_id: Arc::new(Mutex::new(layer_id)),
-
       layer: None
     }
   }

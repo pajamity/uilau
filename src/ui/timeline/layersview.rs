@@ -39,11 +39,11 @@ impl LayersView {
     // Add objects and create views
     let layers_ = s.layers.clone();
     let layers_ = &*layers_.lock().unwrap();
-    for layer in layers_ {
+    for (layer_id, layer) in layers_.iter().enumerate() {
       let layer_ = &*layer.lock().unwrap();
       let objs = &*layer_.objects.lock().unwrap();
       for (_id, obj) in objs.iter() {
-        s.add_object(obj.clone());
+        s.add_object(obj.clone(), layer_id);
       }
     }
 
@@ -57,14 +57,13 @@ impl LayersView {
     s
   }
 
-  pub fn add_object(&mut self, obj_: Arc<Mutex<Object>>) {
+  pub fn add_object(&mut self, obj_: Arc<Mutex<Object>>, layer_id: usize) {
     let obj = &*obj_.lock().unwrap();
 
     let wps = *self.width_per_sec.lock().unwrap();
     let len = *obj.length.lock().unwrap();
     let name = &*obj.name.lock().unwrap();
     let start = *obj.start.lock().unwrap();
-    let layer_id = *obj.layer_id.lock().unwrap();
 
     let view = ObjectView::new(obj_.clone(), &obj.id, name, obj.kind, (len.seconds().unwrap() as f64) * wps, *self.layer_height);
     self.layout.put(&view.drawing_area, (start.seconds().unwrap() as i32) * (wps as i32), (*self.layer_height * layer_id as f64) as i32);
@@ -154,9 +153,6 @@ impl LayersView {
           }
         }
 
-        println!("blocking...");
-        *obj_to_move.layer_id.lock().unwrap() = layer_id;
-        println!("got lock 5");
       }
 
       {
