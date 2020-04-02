@@ -151,16 +151,22 @@ impl LayersView {
         }
 
         println!("blocking...");
-        *obj_to_move.start.lock().unwrap() = ((x as f64 / wps) * 1000.0) as u64 * gst::MSECOND;
+        // *obj_to_move.start.lock().unwrap() = ;
+
         println!("got lock 4");
         *obj_to_move.layer_id.lock().unwrap() = layer_id;
         println!("got lock 5");
       }
+
+      {
+        let obj_to_move_arc_ = obj_to_move_arc.clone();
+        let obj_to_move = &mut *obj_to_move_arc_.lock().unwrap();
+        obj_to_move.set_start(((x as f64 / wps) * 1000.0) as u64 * gst::MSECOND);
+      }
+
       dest_layer.add_object(obj_to_move_arc);
 
       layout.move_(&object_views[id.as_str()].drawing_area, x, (*layer_height * layer_id as f64) as i32);
-
-      // modify its start
     });
   }
 }

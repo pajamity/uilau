@@ -25,7 +25,6 @@ impl Layer {
     s
   }
 
-  // Layer "owns" objects
   pub fn add_object(&mut self, object: Arc<Mutex<Object>>) {
     let obj_ = object.clone();
     let mut obj = &*object.lock().unwrap();
@@ -75,5 +74,4 @@ impl Layer {
       _ => {}
     }
   }
-
 }
