@@ -133,6 +133,8 @@ impl LayersView {
         None => panic!("No object found"),
       };
 
+      let mut samelayer = true;
+
       {
         let obj_to_move_arc_ = obj_to_move_arc.clone();
         let obj_to_move = &*obj_to_move_arc_.lock().unwrap();
@@ -142,18 +144,17 @@ impl LayersView {
           println!("found source layer");
           match src_layer.upgrade() {
             Some(s) => {
-              let s = &mut *s.lock().unwrap();
-              println!("got lock 3");
-              s.remove_object(&obj_to_move);
+              // can't lock the source layer if the object was moved in the same layer
+              if let Ok(ref mut layer) = s.try_lock() {
+                &layer.remove_object(&obj_to_move);
+                samelayer = false;
+              }
             }
             None => panic!("No layer was found")
           }
         }
 
         println!("blocking...");
-        // *obj_to_move.start.lock().unwrap() = ;
-
-        println!("got lock 4");
         *obj_to_move.layer_id.lock().unwrap() = layer_id;
         println!("got lock 5");
       }
@@ -164,7 +165,10 @@ impl LayersView {
         obj_to_move.set_start(((x as f64 / wps) * 1000.0) as u64 * gst::MSECOND);
       }
 
+      if !samelayer {
       dest_layer.add_object(obj_to_move_arc);
+
+      }
 
       layout.move_(&object_views[id.as_str()].drawing_area, x, (*layer_height * layer_id as f64) as i32);
     });
