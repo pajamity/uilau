@@ -62,9 +62,10 @@ impl Layer {
     }
   }
 
-  pub fn remove_object(&mut self, obj: &Object) {
+  pub fn remove_object(&mut self, obj: &mut Object) {
     let objs = &mut *self.objects.lock().unwrap();
     objs.remove(&obj.id).expect("Object not found in layer");
+    // obj.layer = None;
 
     match obj.kind {
       ObjectKind::Clip => {

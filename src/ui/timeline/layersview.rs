@@ -123,8 +123,6 @@ impl LayersView {
       let layer_id = ((y as f64) / *layer_height).floor() as i32;
 
       let layers = &mut *layers_.lock().unwrap();
-      let dest_layer = &mut *layers[layer_id as usize].lock().unwrap();
-      println!("got lock");
 
       let obj_to_move = &object_views[id.as_str()].object;
       let obj_to_move_arc = match obj_to_move.upgrade() {
@@ -132,39 +130,31 @@ impl LayersView {
         None => panic!("No object found"),
       };
 
-      let mut samelayer = true;
-
       {
         let obj_to_move_arc_ = obj_to_move_arc.clone();
-        let obj_to_move = &*obj_to_move_arc_.lock().unwrap();
-        println!("got lock");
+        let ptr = obj_to_move_arc_.clone();
+        let obj_to_move = &mut *obj_to_move_arc_.lock().unwrap();
+        obj_to_move.set_layer(layers[layer_id as usize].clone());
 
         if let Some(src_layer) = &obj_to_move.layer {
-          println!("found source layer");
           match src_layer.upgrade() {
             Some(s) => {
+              let src_layer = &mut *s.lock().unwrap();
               // can't lock the source layer if the object was moved in the same layer
-              if let Ok(ref mut layer) = s.try_lock() {
-                &layer.remove_object(&obj_to_move);
-                samelayer = false;
+              if let Ok(ref mut dest_layer) = layers[layer_id as usize].try_lock() {
+                // move object between layers
+                src_layer.remove_object(obj_to_move);
+                dest_layer.add_object(ptr);
               }
             }
             None => panic!("No layer was found")
           }
         }
-
       }
 
-      {
-        let obj_to_move_arc_ = obj_to_move_arc.clone();
-        let obj_to_move = &mut *obj_to_move_arc_.lock().unwrap();
-        obj_to_move.set_start(((x as f64 / wps) * 1000.0) as u64 * gst::MSECOND);
-      }
-
-      if !samelayer {
-      dest_layer.add_object(obj_to_move_arc);
-
-      }
+      let obj_to_move_arc_ = obj_to_move_arc.clone();
+      let obj_to_move = &mut *obj_to_move_arc_.lock().unwrap();
+      obj_to_move.set_start(((x as f64 / wps) * 1000.0) as u64 * gst::MSECOND);
 
       layout.move_(&object_views[id.as_str()].drawing_area, x, (*layer_height * layer_id as f64) as i32);
     });
@@ -180,3 +170,5 @@ impl LayersView {
     });
   }
 }
+
+// todo: ドラッグしても最初から再生されていない? timelineの
