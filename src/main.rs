@@ -38,14 +38,12 @@ use project::Project;
 mod layer;
 use layer::Layer;
 
-#[derive(Clone)]
+// meant to be singleton
 pub struct AppInfo {
-  pub playinfo: Arc<Mutex<PlayInfo>>,
+  pub playinfo: Mutex<PlayInfo>,
   pub ui: UI,
-  // pub pipeline: gst::Element,
-  pub pipeline: ges::Pipeline,
-  pub timeout_id: Arc<Mutex<u32>>,
-  // pub timeline: ges::Timeline,
+  pub project: Mutex<Project>,
+  pub timeout_id: Mutex<u32>,
 }
 
 pub fn run() {
@@ -54,24 +52,23 @@ pub fn run() {
   ges::init().unwrap();
 
   let app = gtk::Application::new(Some("net.uilau"), Default::default()).expect("Failed to initialize GTK app");
-  let proj = setup_sample_project();
-  let playinfo = Arc::new(Mutex::new(PlayInfo {
+  let project = setup_sample_project();
+  let playinfo = Mutex::new(PlayInfo {
     is_playing: false,
-  }));
-  let ui = UI::new(&app, &proj);
+  });
+  let ui = UI::new(&app, &project);
 
-
-  let info = AppInfo {
+  let info = Arc::new(AppInfo {
     playinfo,
     ui,
-    pipeline: proj.ges_pipeline,
-    timeout_id: Arc::new(Mutex::new(0))
-  };
+    project: Mutex::new(project),
+    timeout_id: Mutex::new(0)
+  });
 
   let info_ = info.clone();
   app.connect_activate(move |app| {
-    let info = &info_;
-    let (ui, pipeline) = (&info.ui, &info.pipeline);
+    let proj = &*info_.project.lock().unwrap();
+    let (ui, pipeline) = (&info.ui, proj.ges_pipeline);
     // apctivate後にセットしないとwindow, widgetがあるのにappが終了してしまう
     app.set_menubar(Some(&ui.menu));
     app.add_window(&ui.window);
@@ -167,8 +164,11 @@ pub fn run() {
     let playpause_action = gio::SimpleAction::new("playpause", None);
     let info_ = info.clone();
     playpause_action.connect_activate(move |_, _| {
-      let (playinfo, ui, pipeline) = (&info_.playinfo, &info_.ui, &info_.pipeline);
-      let mut playinfo = playinfo.lock().unwrap();
+      let (playinfo, ui) = (&info_.playinfo, &info_.ui);
+      let proj = &*info_.project.lock().unwrap();
+      let pipeline = proj.ges_pipeline;
+
+      let mut playinfo = *playinfo.lock().unwrap();
       if playinfo.is_playing {
         pipeline.set_state(gst::State::Paused).unwrap();
         let image = gtk::Image::new_from_icon_name(Some("media-playback-start"), gtk::IconSize::SmallToolbar);
@@ -184,7 +184,8 @@ pub fn run() {
 
     let info_ = info.clone();
     let slider_update_signal_id = ui.slider.connect_value_changed(move |slider| {
-      let pipeline = &info_.pipeline;
+      let proj = &*info_.project.lock().unwrap();
+      let pipeline = &proj.ges_pipeline;
       let value = slider.get_value() as u64;
       if pipeline
         .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, value * gst::SECOND)
@@ -196,7 +197,9 @@ pub fn run() {
     ui.slider.set_draw_value(false);
     let info_ = info.clone();
     let id = gtk::timeout_add(500, move || {
-      let (ui, pipeline) = (&info_.ui, &info_.pipeline);
+      let ui= &info_.ui;
+      let proj = &*info_.project.lock().unwrap();
+      let pipeline = &proj.ges_pipeline;
 
       if let Some(dur) = pipeline.query_duration::<gst::ClockTime>() {
         let seconds = dur / gst::SECOND;
@@ -223,8 +226,9 @@ pub fn run() {
     *timeout_id = id.to_glib();
 
     let info_ = info.clone();
-    ui.sel_slider.onchange(move |_, val, _| {    
-      let pipeline = &info_.pipeline;
+    ui.sel_slider.onchange(move |_, val, _| {
+      let proj = &*info_.project.lock().unwrap();
+      let pipeline = &proj.ges_pipeline;
       if pipeline
         .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, (val as u64) * gst::MSECOND)
         .is_err() {
@@ -235,14 +239,8 @@ pub fn run() {
     ui.window.show_all();
   });
 
-  // info.pipeline
-  //   .set_state(gst::State::Playing)
-  //   .expect("Unable to set state");
-  // info.playinfo.lock().unwrap().is_playing = true;
-  // let image = gtk::Image::new_from_icon_name(Some("media-playback-pause"), gtk::IconSize::SmallToolbar);
-  // info.ui.btn_playpause.set_image(Some(&image));
-  
-  info.pipeline
+  let proj = &*info_.project.lock().unwrap();
+  proj.ges_pipeline
     .set_state(gst::State::Paused)
     .expect("Unable to set state");
   info.playinfo.lock().unwrap().is_playing = false;
@@ -299,15 +297,16 @@ fn setup_sample_project() -> Project {
   proj
 }
 
-fn open_media(info: &AppInfo, proj: &mut Project) {
+fn open_media(info: &AppInfo) {
   match info.ui.file_chooser_dialog() {
     Some(uri) => {
       println!("Opening {}", uri);
-      info.pipeline.set_state(gst::State::Null).unwrap();
-      info.pipeline
+      let proj = &*info.project.lock().unwrap();
+      proj.ges_pipeline.set_state(gst::State::Null).unwrap();
+      proj.ges_pipeline
         .set_property("uri", &uri)
         .expect("Could not open uri");
-      info.pipeline.set_state(gst::State::Playing).unwrap();
+      proj.ges_pipeline.set_state(gst::State::Playing).unwrap();
     }
     None => return
   }
@@ -317,11 +316,9 @@ fn timeline_open_video(info: &AppInfo) {
   match info.ui.file_chooser_dialog() {
     Some(uri) => {
       println!("Opening {}", uri);
-      info.pipeline.set_state(gst::State::Null).unwrap();
-      info.pipeline
-        .set_property("uri", &uri)
-        .expect("Could not open uri");
-      info.pipeline.set_state(gst::State::Playing).unwrap();
+      // info.pipeline
+      //   .set_property("uri", &uri)
+      //   .expect("Could not open uri");
     }
     None => return
   }
