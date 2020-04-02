@@ -65,201 +65,221 @@ pub fn run() {
     timeout_id: Mutex::new(0)
   });
 
-  let info_ = info.clone();
-  app.connect_activate(move |app| {
-    let proj = &*info_.project.lock().unwrap();
-    let (ui, pipeline) = (&info.ui, proj.ges_pipeline);
-    // apctivate後にセットしないとwindow, widgetがあるのにappが終了してしまう
-    app.set_menubar(Some(&ui.menu));
-    app.add_window(&ui.window);
-
-    let about_action = gio::SimpleAction::new("about", None);
-    about_action.connect_activate(UI::create_about);
-    app.add_action(&about_action);
-
-    let quit_action = gio::SimpleAction::new("quit", None);
-    let a = app.clone();
-    quit_action.connect_activate(move |_, _| {
-      a.quit();
-    });
-    app.add_action(&quit_action);
-
-    let open_media_action = gio::SimpleAction::new("open-media", None);
+  {
     let info_ = info.clone();
-    open_media_action.connect_activate(move |_,_| {
-      let info = &info_;
-      open_media(info, &proj);
-    });
+    app.connect_activate(move |app| {
+      let proj = &*info_.project.lock().unwrap();
+      let (ui, pipeline) = (&info_.ui, &proj.ges_pipeline);
+      // apctivate後にセットしないとwindow, widgetがあるのにappが終了してしまう
+      app.set_menubar(Some(&ui.menu));
+      app.add_window(&ui.window);
 
-    app.add_action(&open_media_action);
+      let about_action = gio::SimpleAction::new("about", None);
+      about_action.connect_activate(UI::create_about);
+      app.add_action(&about_action);
 
-    let timeline_open_video_action = gio::SimpleAction::new("timeline-open-video", None);
-    let info_ = info.clone();
-    timeline_open_video_action.connect_activate(move |_, _| {
-      let info = &info_;
-      timeline_open_video(info);
-    });
-    app.add_action(&timeline_open_video_action);
+      let quit_action = gio::SimpleAction::new("quit", None);
+      let a = app.clone();
+      quit_action.connect_activate(move |_, _| {
+        a.quit();
+      });
+      app.add_action(&quit_action);
 
-    // Add handlers for video viewer
-    let overlay = pipeline
-      .clone()
-      .dynamic_cast::<gst_video::VideoOverlay>()
-      .unwrap();
-    let pipeline_ = pipeline.clone();
-    ui.video.connect_draw(move |window, ctx| {
-      let pipeline = &pipeline_;
-      // ElementExt::get_state return value example:
-      //   (Ok(Success), Playing, VoidPending)
-      //   (Ok(Success), Paused, VoidPending)
-      // println!("{:?}", p.get_state(gst::SECOND * 3));
-        
-      match pipeline.get_state(gst::SECOND * 3) {
-        (_, gst::State::Playing, _) => {},
-        (_, gst::State::Paused, _) => {},
-        _ => {
-          let alloc = window.get_allocation();
-          ctx.set_source_rgb(0.0, 0.0, 0.0);
-          ctx.rectangle(0.0, 0.0, alloc.width as f64, alloc.height as f64);
-          ctx.fill();
-        }
-      }
+      let open_media_action = gio::SimpleAction::new("open-media", None);
+      // let info_ = info.clone();
+      // open_media_action.connect_activate(move |_,_| {
+      //   let info = &info_;
+      //   // open_media(info, &proj);
+      // });
 
-      Inhibit(false)
-    });
+      app.add_action(&open_media_action);
 
-    // ref: https://github.com/philn/glide/blob/e90432fa5718f6caa5885571f767318b4924559d/src/channel_player.rs#L159
-    ui.video.connect_realize(move |v| {
-      let overlay = &overlay;
-      let gdk_window = v.get_window().unwrap();
-
-      if !gdk_window.ensure_native() {
-        println!("Can't create nativewindow");
-        process::exit(-1);
-      }
-
-      let display_type_name = gdk_window.get_display().get_type().name();
+      let timeline_open_video_action = gio::SimpleAction::new("timeline-open-video", None);
       {
-        // Check if we're using X11 or ...
-        if display_type_name == "GdkX11Display" {
-          extern "C" {
-            pub fn gdk_x11_window_get_xid(
-              window: *mut glib::object::GObject,
-            ) -> *mut c_void;
-          }
+        let info_ = info_.clone();
+        timeline_open_video_action.connect_activate(move |_, _| {
+          let info = &info_;
+          timeline_open_video(info);
+        });
+        app.add_action(&timeline_open_video_action);
+      }
+      // Add handlers for video viewer
+      let overlay = pipeline
+        .clone()
+        .dynamic_cast::<gst_video::VideoOverlay>()
+        .unwrap();
+      let pipeline_ = pipeline.clone();
+      ui.video.connect_draw(move |window, ctx| {
+        let pipeline = &pipeline_;
+        // ElementExt::get_state return value example:
+        //   (Ok(Success), Playing, VoidPending)
+        //   (Ok(Success), Paused, VoidPending)
+        // println!("{:?}", p.get_state(gst::SECOND * 3));
 
-          #[allow(clippy::cast_ptr_alignment)]
-          unsafe {
-            let xid = gdk_x11_window_get_xid(gdk_window.as_ptr() as *mut _);
-            overlay.set_window_handle(xid as usize);
+        match pipeline.get_state(gst::SECOND * 3) {
+          (_, gst::State::Playing, _) => {},
+          (_, gst::State::Paused, _) => {},
+          _ => {
+            let alloc = window.get_allocation();
+            ctx.set_source_rgb(0.0, 0.0, 0.0);
+            ctx.rectangle(0.0, 0.0, alloc.width as f64, alloc.height as f64);
+            ctx.fill();
           }
-        } else {
-          println!("Add support for display type '{}'", display_type_name);
+        }
+
+        Inhibit(false)
+      });
+
+      // ref: https://github.com/philn/glide/blob/e90432fa5718f6caa5885571f767318b4924559d/src/channel_player.rs#L159
+      ui.video.connect_realize(move |v| {
+        let overlay = &overlay;
+        let gdk_window = v.get_window().unwrap();
+
+        if !gdk_window.ensure_native() {
+          println!("Can't create nativewindow");
           process::exit(-1);
         }
-      }
-    });
 
-    // Controls
-    let playpause_action = gio::SimpleAction::new("playpause", None);
+        let display_type_name = gdk_window.get_display().get_type().name();
+        {
+          // Check if we're using X11 or ...
+          if display_type_name == "GdkX11Display" {
+            extern "C" {
+              pub fn gdk_x11_window_get_xid(
+                window: *mut glib::object::GObject,
+              ) -> *mut c_void;
+            }
+
+            #[allow(clippy::cast_ptr_alignment)]
+              unsafe {
+              let xid = gdk_x11_window_get_xid(gdk_window.as_ptr() as *mut _);
+              overlay.set_window_handle(xid as usize);
+            }
+          } else {
+            println!("Add support for display type '{}'", display_type_name);
+            process::exit(-1);
+          }
+        }
+      });
+
+      // Controls
+      {
+        let playpause_action = gio::SimpleAction::new("playpause", None);
+        let info_ = info_.clone();
+        playpause_action.connect_activate(move |_, _| {
+          let (playinfo, ui) = (&info_.playinfo, &info_.ui);
+          let proj = &*info_.project.lock().unwrap();
+          let pipeline = &proj.ges_pipeline;
+
+          let mut playinfo = &mut *playinfo.lock().unwrap();
+          if playinfo.is_playing {
+            pipeline.set_state(gst::State::Paused).unwrap();
+            let image = gtk::Image::new_from_icon_name(Some("media-playback-start"), gtk::IconSize::SmallToolbar);
+            ui.btn_playpause.set_image(Some(&image));
+          } else {
+            pipeline.set_state(gst::State::Playing).unwrap();
+            let image = gtk::Image::new_from_icon_name(Some("media-playback-pause"), gtk::IconSize::SmallToolbar);
+            ui.btn_playpause.set_image(Some(&image));
+          }
+          playinfo.is_playing = !playinfo.is_playing;
+        });
+        app.add_action(&playpause_action);
+      }
+
+      let slider_update_signal_id = {
+        let info_ = info_.clone();
+        ui.slider.connect_value_changed(move |slider| {
+          let proj = &*info_.project.lock().unwrap();
+          let pipeline = &proj.ges_pipeline;
+          let value = slider.get_value() as u64;
+          if pipeline
+            .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, value * gst::SECOND)
+            .is_err() {
+            eprintln!("Seeking failed");
+          }
+        })
+      };
+
+      ui.slider.set_draw_value(false);
+
+      let id = {
+        let info_ = info_.clone();
+        gtk::timeout_add(500, move || {
+          let ui = &info_.ui;
+          let proj = &*info_.project.lock().unwrap();
+          let pipeline = &proj.ges_pipeline;
+
+          if let Some(dur) = pipeline.query_duration::<gst::ClockTime>() {
+            let seconds = dur / gst::SECOND;
+            // why
+            ui.slider.set_range(0.0, seconds.map(|v| v as f64).unwrap_or(0.0));
+          }
+
+          if let Some(pos) = pipeline.query_position::<gst::ClockTime>() {
+            let seconds = pos / gst::SECOND;
+            ui.slider.block_signal(&slider_update_signal_id);
+            ui.slider.set_value(seconds.map(|v| v as f64).unwrap_or(0.0));
+            ui.slider.unblock_signal(&slider_update_signal_id);
+          }
+
+          if let (Some(dur), Some(pos))
+          = (pipeline.query_duration::<gst::ClockTime>(),
+             pipeline.query_position::<gst::ClockTime>()) {
+            ui.refresh_slider(dur, pos);
+          }
+
+          Continue(true)
+        })
+      };
+      {
+        let info_ = info_.clone();
+        let mut timeout_id = info_.timeout_id.lock().unwrap();
+        *timeout_id = id.to_glib();
+      }
+
+      {
+        let info_ = info_.clone();
+        ui.sel_slider.onchange(move |_, val, _| {
+          let proj = &*info_.project.lock().unwrap();
+          let pipeline = &proj.ges_pipeline;
+          if pipeline
+            .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, (val as u64) * gst::MSECOND)
+            .is_err() {
+            eprintln!("Seeking failed");
+          }
+        });
+      }
+
+      ui.window.show_all();
+    });
+  }
+
+  {
     let info_ = info.clone();
-    playpause_action.connect_activate(move |_, _| {
-      let (playinfo, ui) = (&info_.playinfo, &info_.ui);
-      let proj = &*info_.project.lock().unwrap();
-      let pipeline = proj.ges_pipeline;
+    let proj = &*info_.project.lock().unwrap();
+    proj.ges_pipeline
+      .set_state(gst::State::Paused)
+      .expect("Unable to set state");
+    let pinfo = &mut *info_.playinfo.lock().unwrap();
+    pinfo.is_playing = false;
+    let image = gtk::Image::new_from_icon_name(Some("media-playback-play"), gtk::IconSize::SmallToolbar);
+    &info.ui.btn_playpause.set_image(Some(&image));
+  }
 
-      let mut playinfo = *playinfo.lock().unwrap();
-      if playinfo.is_playing {
-        pipeline.set_state(gst::State::Paused).unwrap();
-        let image = gtk::Image::new_from_icon_name(Some("media-playback-start"), gtk::IconSize::SmallToolbar);
-        ui.btn_playpause.set_image(Some(&image));
-      } else {
-        pipeline.set_state(gst::State::Playing).unwrap();
-        let image = gtk::Image::new_from_icon_name(Some("media-playback-pause"), gtk::IconSize::SmallToolbar);
-        ui.btn_playpause.set_image(Some(&image));
-      }
-      playinfo.is_playing = !playinfo.is_playing;
-    });
-    app.add_action(&playpause_action);
-
+  {
     let info_ = info.clone();
-    let slider_update_signal_id = ui.slider.connect_value_changed(move |slider| {
-      let proj = &*info_.project.lock().unwrap();
-      let pipeline = &proj.ges_pipeline;
-      let value = slider.get_value() as u64;
-      if pipeline
-        .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, value * gst::SECOND)
-        .is_err() {
-        eprintln!("Seeking failed");
+    info.ui.window.connect_delete_event(move |_, _| {
+      gtk::main_quit();
+      let timeout_id = info_.timeout_id.lock().unwrap();
+      match *timeout_id {
+        0 => {}
+        id => {
+          glib::source_remove(glib::SourceId::from_glib(id))
+        }
       }
+      Inhibit(false)
     });
-
-    ui.slider.set_draw_value(false);
-    let info_ = info.clone();
-    let id = gtk::timeout_add(500, move || {
-      let ui= &info_.ui;
-      let proj = &*info_.project.lock().unwrap();
-      let pipeline = &proj.ges_pipeline;
-
-      if let Some(dur) = pipeline.query_duration::<gst::ClockTime>() {
-        let seconds = dur / gst::SECOND;
-        // why
-        ui.slider.set_range(0.0, seconds.map(|v| v as f64).unwrap_or(0.0));
-      }
-
-      if let Some(pos) = pipeline.query_position::<gst::ClockTime>() {
-        let seconds = pos / gst::SECOND;
-        ui.slider.block_signal(&slider_update_signal_id);
-        ui.slider.set_value(seconds.map(|v| v as f64).unwrap_or(0.0));
-        ui.slider.unblock_signal(&slider_update_signal_id);
-      }
-
-      if let (Some(dur), Some(pos))
-        = (pipeline.query_duration::<gst::ClockTime>(), 
-           pipeline.query_position::<gst::ClockTime>()) {
-        ui.refresh_slider(dur, pos);
-      } 
-
-      Continue(true)
-    });
-    let mut timeout_id = info.timeout_id.lock().unwrap();
-    *timeout_id = id.to_glib();
-
-    let info_ = info.clone();
-    ui.sel_slider.onchange(move |_, val, _| {
-      let proj = &*info_.project.lock().unwrap();
-      let pipeline = &proj.ges_pipeline;
-      if pipeline
-        .seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, (val as u64) * gst::MSECOND)
-        .is_err() {
-        eprintln!("Seeking failed");
-      }
-    });
-
-    ui.window.show_all();
-  });
-
-  let proj = &*info_.project.lock().unwrap();
-  proj.ges_pipeline
-    .set_state(gst::State::Paused)
-    .expect("Unable to set state");
-  info.playinfo.lock().unwrap().is_playing = false;
-  let image = gtk::Image::new_from_icon_name(Some("media-playback-play"), gtk::IconSize::SmallToolbar);
-  info.ui.btn_playpause.set_image(Some(&image));
-
-
-  let info_ = info.clone();
-  info.ui.window.connect_delete_event(move |_, _| {
-    gtk::main_quit();
-    let timeout_id = info_.timeout_id.lock().unwrap();
-    match *timeout_id {
-      0 => {}
-      id => {
-        glib::source_remove(glib::SourceId::from_glib(id))
-      }
-    }
-    Inhibit(false)
-  });
+  }
 
   app.run(&[]);
 }
