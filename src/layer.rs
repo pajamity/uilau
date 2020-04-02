@@ -45,12 +45,14 @@ impl Layer {
     objs.insert(id, obj_);
   }
 
-  pub fn remove_object(&mut self, id: &str) {
+  pub fn remove_object_by_id(&mut self, id: &str) {
     let objs = &mut *self.objects.lock().unwrap();
     let obj = objs.remove(&String::from(id));
 
     if let Some(obj) = obj {
+      println!("trying to lock...");
       let obj = &*obj.lock().unwrap();
+      println!("got lock 7");
       match obj.kind {
         ObjectKind::Clip => {
           let clip = obj.clip.as_ref().expect("No clip is set");
@@ -58,6 +60,19 @@ impl Layer {
         }
         _ => {}
       }
+    }
+  }
+
+  pub fn remove_object(&mut self, obj: &Object) {
+    let objs = &mut *self.objects.lock().unwrap();
+    objs.remove(&obj.id).expect("Object not found in layer");
+
+    match obj.kind {
+      ObjectKind::Clip => {
+        let clip = obj.clip.as_ref().expect("No clip is set");
+        self.ges_layer.remove_clip(clip).unwrap();
+      }
+      _ => {}
     }
   }
 

@@ -125,46 +125,37 @@ impl LayersView {
 
       let layers = &mut *layers_.lock().unwrap();
       let dest_layer = &mut *layers[layer_id as usize].lock().unwrap();
+      println!("got lock");
 
       let obj_to_move = &object_views[id.as_str()].object;
       let obj_to_move_arc = match obj_to_move.upgrade() {
         Some(o) => o,
         None => panic!("No object found"),
       };
-      let obj_to_move_arc_ = obj_to_move_arc.clone();
-      let obj_to_move = &*obj_to_move_arc_.lock().unwrap();
 
-      // move to dest layer
-      // let mut obj_to_move = None;
-      // let mut src_layer = None;
+      {
+        let obj_to_move_arc_ = obj_to_move_arc.clone();
+        let obj_to_move = &*obj_to_move_arc_.lock().unwrap();
+        println!("got lock");
 
-      // let layers___ = layers_.clone();
-      // let layers__ = &mut *layers___.lock().unwrap();
-      //
-      // for layer in layers {
-      //   let layer_ = &mut *layer.lock().unwrap();
-      //   let objs_ = &*layer_.objects.lock().unwrap();
-      //   let obj = objs_.get(id.as_str());
-      //   if let Some(obj) = obj { // if object with specific id is found
-      //     obj_to_move = Some(obj.clone());
-      //     src_layer = Some(layer.clone());
-      //     break
-      //   }
-      // }
-
-      // let obj_to_move_ = &*obj_to_move.lock().unwrap();
-      if let Some(src_layer) = &obj_to_move.layer {
-        match src_layer.upgrade() {
-          Some(s) => {
-            let s = &mut *s.lock().unwrap();
-            s.remove_object(&obj_to_move.id);
+        if let Some(src_layer) = &obj_to_move.layer {
+          println!("found source layer");
+          match src_layer.upgrade() {
+            Some(s) => {
+              let s = &mut *s.lock().unwrap();
+              println!("got lock 3");
+              s.remove_object(&obj_to_move);
+            }
+            None => panic!("No layer was found")
           }
-          None => panic!("No layer was found")
         }
-      }
 
-      *obj_to_move.start.lock().unwrap() = ((x as f64 / wps) * 1000.0) as u64 * gst::MSECOND;
-      *obj_to_move.layer_id.lock().unwrap() = layer_id;
+        println!("blocking...");
+        *obj_to_move.start.lock().unwrap() = ((x as f64 / wps) * 1000.0) as u64 * gst::MSECOND;
+        println!("got lock 4");
+        *obj_to_move.layer_id.lock().unwrap() = layer_id;
+        println!("got lock 5");
+      }
       dest_layer.add_object(obj_to_move_arc);
 
       layout.move_(&object_views[id.as_str()].drawing_area, x, (*layer_height * layer_id as f64) as i32);

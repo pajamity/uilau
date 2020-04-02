@@ -274,6 +274,8 @@ fn setup_sample_project() -> Project {
   obj.set_layer(layer_.clone());
   layer.add_object(Arc::new(Mutex::new(obj)));
 
+  proj.add_layer();
+
   // let effect = ges::Effect::new("agingtv").expect("Failed to create effect");
   // clip.add(&effect).unwrap();
 
