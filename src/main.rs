@@ -91,10 +91,18 @@ pub fn run() {
     let info_ = info.clone();
     open_media_action.connect_activate(move |_,_| {
       let info = &info_;
-      open_media(info);
+      open_media(info, &proj);
     });
 
     app.add_action(&open_media_action);
+
+    let timeline_open_video_action = gio::SimpleAction::new("timeline-open-video", None);
+    let info_ = info.clone();
+    timeline_open_video_action.connect_activate(move |_, _| {
+      let info = &info_;
+      timeline_open_video(info);
+    });
+    app.add_action(&timeline_open_video_action);
 
     // Add handlers for video viewer
     let overlay = pipeline
@@ -291,7 +299,21 @@ fn setup_sample_project() -> Project {
   proj
 }
 
-fn open_media(info: &AppInfo) {
+fn open_media(info: &AppInfo, proj: &mut Project) {
+  match info.ui.file_chooser_dialog() {
+    Some(uri) => {
+      println!("Opening {}", uri);
+      info.pipeline.set_state(gst::State::Null).unwrap();
+      info.pipeline
+        .set_property("uri", &uri)
+        .expect("Could not open uri");
+      info.pipeline.set_state(gst::State::Playing).unwrap();
+    }
+    None => return
+  }
+}
+
+fn timeline_open_video(info: &AppInfo) {
   match info.ui.file_chooser_dialog() {
     Some(uri) => {
       println!("Opening {}", uri);
