@@ -168,5 +168,15 @@ impl LayersView {
 
       layout.move_(&object_views[id.as_str()].drawing_area, x, (*layer_height * layer_id as f64) as i32);
     });
+
+    let layer_height = self.layer_height.clone();
+    let layers = self.layers.clone();
+    self.layout.connect_drag_motion(move |_layout, _ctx, x, y, _time| {
+      let layers = &*layers.lock().unwrap();
+
+      let is_droppable = (layers.len() as f64) * *layer_height >= y as f64;
+      println!("Droppable: {}", is_droppable);
+      Inhibit(!is_droppable) // FIXME: drop area restriction using drag_motion handler does not work
+    });
   }
 }
