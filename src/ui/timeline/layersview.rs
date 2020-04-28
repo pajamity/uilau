@@ -179,6 +179,7 @@ impl LayersView {
 
   fn set_menu_handler(&self) {
     let menu = self.ctx_menu.menu.downgrade();
+    self.layout.add_events(gdk::EventMask::BUTTON_PRESS_MASK);
     self.layout.connect_button_press_event(move |area, event_button| {
       match event_button.get_button() {
         3 => {
@@ -186,8 +187,7 @@ impl LayersView {
             Some(m) => m,
             None => return Inhibit(false)
           };
-          println!("popup {}", menu);
-          
+    
           menu.popup_at_pointer(Some(event_button));
         }
         _ => return Inhibit(false)

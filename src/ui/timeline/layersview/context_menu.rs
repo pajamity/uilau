@@ -21,30 +21,10 @@ impl ContextMenu {
   }
 
   fn create_menu() -> Menu {
-    let menu = Menu::new();
-
-    Self::append_submenu_media_object(&menu);
+    let xml = include_str!("../../xml/timeline/layersview/context_menu.xml");
+    let builder = gtk::Builder::new_from_string(xml);
+    let menu: gtk::Menu = builder.get_object("menu").unwrap();
 
     menu
-  }
-
-  fn append_submenu_media_object(menu: &Menu) {
-    let submenu = Menu::new();
-
-    // // let open_video = MenuItem::new(Some("動画ファイル"), Some("app.timeline-open-video"));
-    let open_video = MenuItem::new_with_label("動画ファイル");
-    open_video.set_action_name(Some("app.timeline-open-video"));
-    //
-    // // submenu.append_item(&open_video);
-    // submenu.append(&open_video);
-
-    // // menu.append_submenu(Some("メディアオブジェクトの追加"), &submenu);
-    // menu.set_submenu(Some("メディアオブジェクトの追加"), &submenu);
-
-    // let media_obj_menuitem = MenuItem::new_with_label("メディアオブジェクトの追加");
-    // media_obj_menuitem.set_submenu(Some(&submenu));
-    //
-    // menu.append(&media_obj_menuitem);
-    menu.append(&open_video);
   }
 }
