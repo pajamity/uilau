@@ -3,6 +3,9 @@ use gtk::prelude::*;
 
 use std::sync::{Arc, Mutex};
 
+mod context_menu;
+use context_menu::ContextMenu;
+
 use super::objectview::ObjectView;
 use super::super::super::object::{Object, ObjectKind};
 use super::super::super::layer::Layer;
@@ -17,12 +20,14 @@ pub struct LayersView {
   pub width_per_sec: Arc<Mutex<f64>>,
   pub object_views: Arc<Mutex<HashMap<String, ObjectView>>>,
   pub layers: Arc<Mutex<Vec<Arc<Mutex<Layer>>>>>,
+  pub ctx_menu: Arc<ContextMenu>,
 }
 
 impl LayersView {
   pub fn new(builder: &gtk::Builder, width_per_sec: f64, layers: Arc<Mutex<Vec<Arc<Mutex<Layer>>>>>) -> Self {
     let layout: gtk::Layout = builder.get_object("timeline-layers").unwrap();
-    
+    let ctx_menu = Arc::new(ContextMenu::new());
+
     let entries = gtk::TargetEntry::new("text/plain", gtk::TargetFlags::SAME_APP, 0);
     layout.drag_dest_set(gtk::DestDefaults::ALL, &[entries], gdk::DragAction::MOVE);
 
@@ -34,6 +39,7 @@ impl LayersView {
       width_per_sec: Arc::new(Mutex::new(width_per_sec)),
       object_views: Arc::new(Mutex::new(object_views)),
       layers,
+      ctx_menu,
     };
 
     // Add objects and create views
@@ -49,6 +55,7 @@ impl LayersView {
 
     s.set_draw_handler();
     s.set_drop_handler();
+    s.set_menu_handler();
 
     for widget in s.layout.get_children() {
       println!("Child: {:?}", widget);
@@ -167,6 +174,26 @@ impl LayersView {
       let is_droppable = (layers.len() as f64) * *layer_height >= y as f64;
       println!("Droppable: {}", is_droppable);
       Inhibit(!is_droppable) // FIXME: drop area restriction using drag_motion handler does not work
+    });
+  }
+
+  fn set_menu_handler(&self) {
+    let menu = self.ctx_menu.menu.downgrade();
+    self.layout.connect_button_press_event(move |area, event_button| {
+      match event_button.get_button() {
+        3 => {
+          let menu = match menu.upgrade() {
+            Some(m) => m,
+            None => return Inhibit(false)
+          };
+          println!("popup {}", menu);
+          
+          menu.popup_at_pointer(Some(event_button));
+        }
+        _ => return Inhibit(false)
+      }
+
+      Inhibit(false)
     });
   }
 }

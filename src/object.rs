@@ -34,7 +34,7 @@ pub struct Object {
 }
 
 impl Object {
-  pub fn new(id: &str, name: &str, kind: ObjectKind, length: gst::ClockTime, start: gst::ClockTime, layer_id: i32) -> Self {
+  pub fn new(id: &str, name: &str, kind: ObjectKind, length: gst::ClockTime, start: gst::ClockTime) -> Self {
     let s = Self {
       id: id.to_string(),
       name: Arc::new(Mutex::new(name.to_string())),
@@ -49,7 +49,7 @@ impl Object {
     s
   }
 
-  pub fn new_from_uri_clip(id: &str, name: &str, start: gst::ClockTime, layer_id: i32, clip: ges::UriClip) -> Self {
+  pub fn new_from_uri_clip(id: &str, name: &str, start: gst::ClockTime, clip: ges::UriClip) -> Self {
     let asset = clip.get_asset().unwrap();
     let length = asset
       .downcast::<ges::UriClipAsset>()

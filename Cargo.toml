@@ -10,7 +10,7 @@ edition = "2018"
 gstreamer = "^0.15.4"
 glib = "0.9.3"
 gdk = "0.12.1"
-gtk = "0.8.1"
+gtk = { version = "0.8.1", features = ["v3_22"] }
 gstreamer-video = "0.15.3"
 byte-slice-cast = "0.3.5"
 gstreamer-app = "0.15.4"

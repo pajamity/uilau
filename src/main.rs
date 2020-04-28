@@ -86,11 +86,12 @@ pub fn run() {
       app.add_action(&quit_action);
 
       let open_media_action = gio::SimpleAction::new("open-media", None);
-      // let info_ = info.clone();
-      // open_media_action.connect_activate(move |_,_| {
-      //   let info = &info_;
-      //   // open_media(info, &proj);
-      // });
+      {
+        let info_ = info_.clone();
+        open_media_action.connect_activate(move |_, _| {
+          open_media(&info_);
+        });
+      }
 
       app.add_action(&open_media_action);
 
@@ -98,8 +99,7 @@ pub fn run() {
       {
         let info_ = info_.clone();
         timeline_open_video_action.connect_activate(move |_, _| {
-          let info = &info_;
-          timeline_open_video(info);
+          timeline_open_video(&info_);
         });
         app.add_action(&timeline_open_video_action);
       }
@@ -296,7 +296,7 @@ fn setup_sample_project() -> Project {
   let layer = &mut *layer_.lock().unwrap();
 
   let clip = create_sample_clip();
-  let mut obj = Object::new_from_uri_clip("v1", "bigbunny", 10 * gst::SECOND, 0, clip);
+  let mut obj = Object::new_from_uri_clip("v1", "bigbunny", 10 * gst::SECOND, clip);
   obj.set_layer(layer_.clone());
   layer.add_object(Arc::new(Mutex::new(obj)));
 
@@ -336,9 +336,14 @@ fn timeline_open_video(info: &AppInfo) {
   match info.ui.file_chooser_dialog() {
     Some(uri) => {
       println!("Opening {}", uri);
-      // info.pipeline
-      //   .set_property("uri", &uri)
-      //   .expect("Could not open uri");
+      let proj = &mut info.project.lock().unwrap();
+
+      let clip = ges::UriClip::new(&uri).expect("Could not create clip");
+      let layer_ = proj.add_layer();
+      let layer = &mut *layer_.lock().unwrap();
+      let mut obj = Object::new_from_uri_clip("v9", "piyo", 3 * gst::SECOND, clip);
+      obj.set_layer(layer_.clone());
+      layer.add_object(Arc::new(Mutex::new(obj)));
     }
     None => return
   }
