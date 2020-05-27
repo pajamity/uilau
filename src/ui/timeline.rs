@@ -52,7 +52,7 @@ impl Timeline {
     let timescale = TimeScale::new(layout, 0 * gst::SECOND, 100 * gst::SECOND, wps);
     let timescale = Arc::new(timescale);
 
-    let view = LayersView::new(&builder, wps, proj.layers.clone());
+    let view = LayersView::new(&builder, wps, proj.layers.clone(), &window);
 
     let layer_sel = LayerSelector::new(&builder);
 

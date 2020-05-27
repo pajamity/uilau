@@ -73,12 +73,20 @@ pub fn run() {
       // apctivate後にセットしないとwindow, widgetがあるのにappが終了してしまう
       app.set_menubar(Some(&ui.menu));
       app.add_window(&ui.window);
+      ui.window.set_application(Some(app));
 
       let about_action = gio::SimpleAction::new("about", None);
       about_action.connect_activate(UI::create_about);
       app.add_action(&about_action);
 
       let quit_action = gio::SimpleAction::new("quit", None);
+      let a = app.clone();
+      quit_action.connect_activate(move |_, _| {
+        a.quit();
+      });
+      app.add_action(&quit_action);
+
+      let quit_action = gio::SimpleAction::new("app.quit", None);
       let a = app.clone();
       quit_action.connect_activate(move |_, _| {
         a.quit();
@@ -99,10 +107,13 @@ pub fn run() {
       {
         let info_ = info_.clone();
         timeline_open_video_action.connect_activate(move |_, _| {
+          println!("here3");
           timeline_open_video(&info_);
         });
-        app.add_action(&timeline_open_video_action);
       }
+
+      app.add_action(&timeline_open_video_action);
+
       // Add handlers for video viewer
       let overlay = pipeline
         .clone()
@@ -333,8 +344,11 @@ fn open_media(info: &AppInfo) {
 }
 
 fn timeline_open_video(info: &AppInfo) {
+  println!("here");
   match info.ui.file_chooser_dialog() {
     Some(uri) => {
+  println!("here2");
+
       println!("Opening {}", uri);
       let proj = &mut info.project.lock().unwrap();
 

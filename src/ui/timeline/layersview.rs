@@ -24,10 +24,22 @@ pub struct LayersView {
 }
 
 impl LayersView {
-  pub fn new(builder: &gtk::Builder, width_per_sec: f64, layers: Arc<Mutex<Vec<Arc<Mutex<Layer>>>>>) -> Self {
+  pub fn new(builder: &gtk::Builder, width_per_sec: f64, layers: Arc<Mutex<Vec<Arc<Mutex<Layer>>>>>, window: &gtk::Window) -> Self {
     let layout: gtk::Layout = builder.get_object("timeline-layers").unwrap();
-    let ctx_menu = Arc::new(ContextMenu::new());
+    let ctx_menu = ContextMenu::new();
+    let ctx_menu = Arc::new(ctx_menu);
 
+    // popup menu
+    // let lw = layout.get_window().unwrap();
+    // set (gtk::)window as user_data for menu (= gdk::window) to pass the assertion: https://code.woboq.org/gtk/gtk/gtk/gtkwidget.c.html#15865
+  
+    
+    // println!("{:?}", lw);
+    // ctx_menu.menu.register_window(&lw);
+
+    // layout.insert_action_group("app", )
+
+    //
     let entries = gtk::TargetEntry::new("text/plain", gtk::TargetFlags::SAME_APP, 0);
     layout.drag_dest_set(gtk::DestDefaults::ALL, &[entries], gdk::DragAction::MOVE);
 
@@ -180,7 +192,7 @@ impl LayersView {
   fn set_menu_handler(&self) {
     let menu = self.ctx_menu.menu.downgrade();
     self.layout.add_events(gdk::EventMask::BUTTON_PRESS_MASK);
-    self.layout.connect_button_press_event(move |area, event_button| {
+    self.layout.connect_button_press_event(move |layout, event_button| {
       match event_button.get_button() {
         3 => {
           let menu = match menu.upgrade() {
@@ -188,7 +200,9 @@ impl LayersView {
             None => return Inhibit(false)
           };
     
+          // menu.attach_to_widget(layout, None);
           menu.popup_at_pointer(Some(event_button));
+          // menu.popup_at_widget(layout, gdk::Gravity::NorthWest, gdk::Gravity::NorthWest, None);
         }
         _ => return Inhibit(false)
       }

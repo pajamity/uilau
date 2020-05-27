@@ -24,6 +24,14 @@ impl ContextMenu {
     let xml = include_str!("../../xml/timeline/layersview/context_menu.xml");
     let builder = gtk::Builder::new_from_string(xml);
     let menu: gtk::Menu = builder.get_object("menu").unwrap();
+    
+    
+    // let item: gtk::MenuItem = builder.get_object("open-video").unwrap();
+    // println!("action: {:?}", item.get_action_name());
+    // item.set_action_name(Some("quit"));
+    // println!("action: {:?}", item.get_action_name());
+
+    // item.connect_activate(move )
 
     menu
   }
