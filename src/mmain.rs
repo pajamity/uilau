@@ -213,7 +213,7 @@ pub fn run() {
 
       ui.slider.set_draw_value(false);
 
-      let id = {
+      let .id = {
         let info_ = info_.clone();
         gtk::timeout_add(500, move || {
           let ui = &info_.ui;
