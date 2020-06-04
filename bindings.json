@@ -3,10 +3,10 @@
   "rust": {
     "dir": "",
     "interfaceModule": "interface",
-    "implementationModule": "implementation"
+    "implementationModule": "qt_impl"
   },
   "objects": {
-    "Player": {
+    "App": {
       "type": "Object",
       "functions": {
         "play": {
@@ -16,12 +16,19 @@
         "pause": {
           "return": "void",
           "mut": true
+        },
+        "seekTo": {
+          "return": "void",
+          "mut": true
         }
-      }
-    },
-    "App": {
-      "type": "Object",
-      "functions": {
+      },
+      "properties": {
+        "durationMs": {
+          "type": "quint64"
+        },
+        "positionMs": {
+          "type": "quint64"
+        }
       }
     }
   }

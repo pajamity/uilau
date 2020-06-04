@@ -7,65 +7,105 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicPtr, Ordering};
 use std::ptr::null;
 
-use crate::implementation::*;
+// use crate::qt_impl::{App};
+use crate::qt_impl::app_impl::*;
 
-pub struct PlayerQObject {}
+pub struct AppQObject {}
 
-pub struct PlayerEmitter {
-    qobject: Arc<AtomicPtr<PlayerQObject>>,
+pub struct AppEmitter {
+    qobject: Arc<AtomicPtr<AppQObject>>,
+    duration_ms_changed: fn(*mut AppQObject),
+    position_ms_changed: fn(*mut AppQObject),
 }
 
-unsafe impl Send for PlayerEmitter {}
+unsafe impl Send for AppEmitter {}
 
-impl PlayerEmitter {
+impl AppEmitter {
     /// Clone the emitter
     ///
     /// The emitter can only be cloned when it is mutable. The emitter calls
     /// into C++ code which may call into Rust again. If emmitting is possible
     /// from immutable structures, that might lead to access to a mutable
     /// reference. That is undefined behaviour and forbidden.
-    pub fn clone(&mut self) -> PlayerEmitter {
-        PlayerEmitter {
+    pub fn clone(&mut self) -> AppEmitter {
+        AppEmitter {
             qobject: self.qobject.clone(),
+            duration_ms_changed: self.duration_ms_changed,
+            position_ms_changed: self.position_ms_changed,
         }
     }
     fn clear(&self) {
-        let n: *const PlayerQObject = null();
-        self.qobject.store(n as *mut PlayerQObject, Ordering::SeqCst);
+        let n: *const AppQObject = null();
+        self.qobject.store(n as *mut AppQObject, Ordering::SeqCst);
+    }
+    pub fn duration_ms_changed(&mut self) {
+        let ptr = self.qobject.load(Ordering::SeqCst);
+        if !ptr.is_null() {
+            (self.duration_ms_changed)(ptr);
+        }
+    }
+    pub fn position_ms_changed(&mut self) {
+        let ptr = self.qobject.load(Ordering::SeqCst);
+        if !ptr.is_null() {
+            (self.position_ms_changed)(ptr);
+        }
     }
 }
 
-pub trait PlayerTrait {
-    fn new(emit: PlayerEmitter) -> Self;
-    fn emit(&mut self) -> &mut PlayerEmitter;
+pub trait AppTrait {
+    fn new(emit: AppEmitter) -> Self;
+    fn emit(&mut self) -> &mut AppEmitter;
+    fn duration_ms(&self) -> u64;
+    fn position_ms(&self) -> u64;
     fn pause(&mut self) -> ();
     fn play(&mut self) -> ();
+    fn seek_to(&mut self) -> ();
 }
 
 #[no_mangle]
-pub extern "C" fn player_new(
-    player: *mut PlayerQObject,
-) -> *mut Player {
-    let player_emit = PlayerEmitter {
-        qobject: Arc::new(AtomicPtr::new(player)),
+pub extern "C" fn app_new(
+    app: *mut AppQObject,
+    app_duration_ms_changed: fn(*mut AppQObject),
+    app_position_ms_changed: fn(*mut AppQObject),
+) -> *mut App {
+    let app_emit = AppEmitter {
+        qobject: Arc::new(AtomicPtr::new(app)),
+        duration_ms_changed: app_duration_ms_changed,
+        position_ms_changed: app_position_ms_changed,
     };
-    let d_player = Player::new(player_emit);
-    Box::into_raw(Box::new(d_player))
+    let d_app = App::new(app_emit);
+    Box::into_raw(Box::new(d_app))
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn player_free(ptr: *mut Player) {
+pub unsafe extern "C" fn app_free(ptr: *mut App) {
     Box::from_raw(ptr).emit().clear();
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn player_pause(ptr: *mut Player) {
+pub unsafe extern "C" fn app_duration_ms_get(ptr: *const App) -> u64 {
+    (&*ptr).duration_ms()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_position_ms_get(ptr: *const App) -> u64 {
+    (&*ptr).position_ms()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_pause(ptr: *mut App) {
     let o = &mut *ptr;
     o.pause()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn player_play(ptr: *mut Player) {
+pub unsafe extern "C" fn app_play(ptr: *mut App) {
     let o = &mut *ptr;
     o.play()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_seek_to(ptr: *mut App) {
+    let o = &mut *ptr;
+    o.seek_to()
 }

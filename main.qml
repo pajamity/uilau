@@ -11,8 +11,8 @@ ApplicationWindow {
   height: 480
   title: qsTr("uilau")
 
-  Player {
-    id: player
+  App {
+    id: app
   }
 
   menuBar: MenuBar {
@@ -67,6 +67,7 @@ ApplicationWindow {
 
   Row {
     anchors.bottom: parent.bottom
+    height: 30
 
     Button {
       id: playPauseButton
@@ -78,15 +79,15 @@ ApplicationWindow {
       property bool playing: false
 
       function play() {
-        playpause.playing = true
-        playpause.text = "Pause"
-        player.play()
+        this.playing = true
+        this.text = "Pause"
+        app.play()
       }
 
       function pause() {
-        playpause.playing = false
-        playpause.text = "Play"
-        player.pause()
+        this.playing = false
+        this.text = "Play"
+        app.pause()
       }
       
       onClicked: {
@@ -101,13 +102,32 @@ ApplicationWindow {
     Button {
       id: seekFirstFrameButton
       objectName: "seekFirstFrameButton"
+      width: 80
+      height: 30
+      text: "First"
 
       // todo: implement
+    }
+
+    Slider {
+      id: previewSlider
+      objectName: "previewSlider"
+      width: 500
+      height: 30
+
+      from: 0
+      to: app.durationMs
+      value: app.positionMs
+
+      onMoved: app.seekTo(this.value)
     }
 
     Button {
       id: seekLastFrameButton
       objectName: "seekLastFrameButton"
+      width: 80
+      height: 30
+      text: "Last"
 
       // todo: implement
     }
@@ -117,10 +137,9 @@ ApplicationWindow {
     id: aboutPopup
     anchors.centerIn: parent
     width: 200
-    height : 150
+    height: 150
     modal: false
     focus: true
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     
     contentItem: Text {
       text: qsTr("uilau beta\n")

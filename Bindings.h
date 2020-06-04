@@ -5,9 +5,9 @@
 #include <QtCore/QObject>
 #include <QtCore/QAbstractItemModel>
 
-class Player;
+class App;
 
-class Player : public QObject
+class App : public QObject
 {
     Q_OBJECT
 public:
@@ -15,12 +15,19 @@ public:
 private:
     Private * m_d;
     bool m_ownsPrivate;
-    explicit Player(bool owned, QObject *parent);
+    Q_PROPERTY(quint64 durationMs READ durationMs NOTIFY durationMsChanged FINAL)
+    Q_PROPERTY(quint64 positionMs READ positionMs NOTIFY positionMsChanged FINAL)
+    explicit App(bool owned, QObject *parent);
 public:
-    explicit Player(QObject *parent = nullptr);
-    ~Player();
+    explicit App(QObject *parent = nullptr);
+    ~App();
+    quint64 durationMs() const;
+    quint64 positionMs() const;
     Q_INVOKABLE void pause();
     Q_INVOKABLE void play();
+    Q_INVOKABLE void seekTo();
 Q_SIGNALS:
+    void durationMsChanged();
+    void positionMsChanged();
 };
 #endif // BINDINGS_H
