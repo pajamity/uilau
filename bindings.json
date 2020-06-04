@@ -18,6 +18,11 @@
           "mut": true
         }
       }
+    },
+    "App": {
+      "type": "Object",
+      "functions": {
+      }
     }
   }
 }

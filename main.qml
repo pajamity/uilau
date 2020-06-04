@@ -18,6 +18,7 @@ ApplicationWindow {
   menuBar: MenuBar {
     Menu {
       title: qsTr("File")
+      
       Action { text: qsTr("Open") }
       Action { text: qsTr("Open Recent") }
       Action { text: qsTr("Close") }
@@ -31,6 +32,24 @@ ApplicationWindow {
       Action { text: qsTr("Preferences") }
 
       Action { text: qsTr("Quit") }
+    }
+
+    Menu {
+      title: qtTr("Misc")
+
+      Action {
+        text: qsTr("File Info")
+      }
+      Action {
+        text: qsTr("Overlay Info")
+      }
+      Action {
+        text: qsTr("Plugin Info")
+      }
+      Action {
+        text: qsTr("About uilau")
+        onTriggered: aboutPopup.open()
+      }
     }
   }
 
@@ -91,6 +110,20 @@ ApplicationWindow {
       objectName: "seekLastFrameButton"
 
       // todo: implement
+    }
+  }
+
+  Popup {
+    id: aboutPopup
+    anchors.centerIn: parent
+    width: 200
+    height : 150
+    modal: false
+    focus: true
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    
+    contentItem: Text {
+      text: qsTr("uilau beta\n")
     }
   }
 }
