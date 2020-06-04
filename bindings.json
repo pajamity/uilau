@@ -19,7 +19,11 @@
         },
         "seekTo": {
           "return": "void",
-          "mut": true
+          "mut": true,
+          "arguments": [{
+            "name": "to",
+            "type": "quint64"
+          }]
         }
       },
       "properties": {

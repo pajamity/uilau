@@ -29,7 +29,7 @@ impl AppTrait for App {
   fn new(emit: AppEmitter) -> Self {
     let (project, sink) = Self::setup();
 
-    let s = Self {
+    let mut s = Self {
       emit,
       project,
       sink: Arc::new(sink)
@@ -39,6 +39,8 @@ impl AppTrait for App {
     // so we wait until the pointer of video_item is passed
     s.wait_for_pointer();
 
+    s.emit.duration_ms_changed();
+
     s
   }
 
@@ -47,29 +49,38 @@ impl AppTrait for App {
   }
 
   fn play(&mut self) {
-    println!("Play");
     self.project.ges_pipeline
       .set_state(gst::State::Playing)
       .expect("could not change the state");
   }
   
   fn pause(&mut self) {
-    println!("Pause");
     self.project.ges_pipeline
       .set_state(gst::State::Paused)
       .expect("could not change the state");
   }
 
   fn duration_ms(&self) -> u64 {
+    if let Some(dur) = self.project.ges_pipeline.query_duration::<gst::ClockTime>() {
+      let ms = dur.mseconds().unwrap();
+      return ms;
+    }
     0
   }
 
   fn position_ms(&self) -> u64 {
-    100
+    if let Some(pos) = self.project.ges_pipeline.query_position::<gst::ClockTime>() {
+      let ms = pos.mseconds().unwrap();
+      return ms;
+    }
+    0
   }
 
-  fn seek_to(&mut self) {
-    
+  fn seek_to(&mut self, to: u64) {
+    if self.project.ges_pipeline.seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, (to as u64) * gst::MSECOND)
+      .is_err() {
+      eprintln!("Seeking failed");
+    }
   }
 }
 

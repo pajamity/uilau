@@ -13,7 +13,7 @@ ApplicationWindow {
 
   App {
     id: app
-  }
+  } 
 
   menuBar: MenuBar {
     Menu {
@@ -35,7 +35,7 @@ ApplicationWindow {
     }
 
     Menu {
-      title: qtTr("Misc")
+      title: qsTr("Misc")
 
       Action {
         text: qsTr("File Info")
@@ -116,10 +116,24 @@ ApplicationWindow {
       height: 30
 
       from: 0
-      to: app.durationMs
+      to: app.durationMs 
       value: app.positionMs
 
-      onMoved: app.seekTo(this.value)
+      onMoved: {
+        app.seekTo(this.value)
+      }
+    }
+
+    Timer {
+      id: previewSliderTimer
+      interval: 500
+      repeat: true
+      running: true // todo: run only when needed
+
+      onTriggered: {
+        previewSlider.value = app.positionMs
+        previewSlider.to = app.durationMs // todo: run only when needed
+      }
     }
 
     Button {

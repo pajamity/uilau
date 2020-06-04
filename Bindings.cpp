@@ -18,7 +18,7 @@ extern "C" {
     quint64 app_position_ms_get(const App::Private*);
     void app_pause(App::Private*);
     void app_play(App::Private*);
-    void app_seek_to(App::Private*);
+    void app_seek_to(App::Private*, quint64);
 };
 
 App::App(bool /*owned*/, QObject *parent):
@@ -58,7 +58,7 @@ void App::play()
 {
     return app_play(m_d);
 }
-void App::seekTo()
+void App::seekTo(quint64 to)
 {
-    return app_seek_to(m_d);
+    return app_seek_to(m_d, to);
 }

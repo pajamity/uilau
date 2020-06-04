@@ -7,8 +7,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicPtr, Ordering};
 use std::ptr::null;
 
-// use crate::qt_impl::{App};
-use crate::qt_impl::app_impl::*;
+use crate::qt_impl::app_impl::App;
 
 pub struct AppQObject {}
 
@@ -59,7 +58,7 @@ pub trait AppTrait {
     fn position_ms(&self) -> u64;
     fn pause(&mut self) -> ();
     fn play(&mut self) -> ();
-    fn seek_to(&mut self) -> ();
+    fn seek_to(&mut self, to: u64) -> ();
 }
 
 #[no_mangle]
@@ -105,7 +104,7 @@ pub unsafe extern "C" fn app_play(ptr: *mut App) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn app_seek_to(ptr: *mut App) {
+pub unsafe extern "C" fn app_seek_to(ptr: *mut App, to: u64) {
     let o = &mut *ptr;
-    o.seek_to()
+    o.seek_to(to)
 }

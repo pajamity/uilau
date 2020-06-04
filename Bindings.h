@@ -25,7 +25,7 @@ public:
     quint64 positionMs() const;
     Q_INVOKABLE void pause();
     Q_INVOKABLE void play();
-    Q_INVOKABLE void seekTo();
+    Q_INVOKABLE void seekTo(quint64 to);
 Q_SIGNALS:
     void durationMsChanged();
     void positionMsChanged();
