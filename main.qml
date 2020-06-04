@@ -1,6 +1,6 @@
-import QtQuick 2.6
-import QtQuick.Controls 2.15
-import QtQuick.Window 2.2
+import QtQuick 2.14
+import QtQuick.Controls 2.14
+import QtQuick.Window 2.14
 import RustCode 1.0
 
 import org.freedesktop.gstreamer.GLVideoItem 1.0

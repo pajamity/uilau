@@ -5,9 +5,9 @@
 #include <QtCore/QObject>
 #include <QtCore/QAbstractItemModel>
 
-class Simple;
+class Player;
 
-class Simple : public QObject
+class Player : public QObject
 {
     Q_OBJECT
 public:
@@ -15,14 +15,12 @@ public:
 private:
     Private * m_d;
     bool m_ownsPrivate;
-    Q_PROPERTY(QString message READ message WRITE setMessage NOTIFY messageChanged FINAL)
-    explicit Simple(bool owned, QObject *parent);
+    explicit Player(bool owned, QObject *parent);
 public:
-    explicit Simple(QObject *parent = nullptr);
-    ~Simple();
-    QString message() const;
-    void setMessage(const QString& v);
+    explicit Player(QObject *parent = nullptr);
+    ~Player();
+    Q_INVOKABLE void pause();
+    Q_INVOKABLE void play();
 Q_SIGNALS:
-    void messageChanged();
 };
 #endif // BINDINGS_H

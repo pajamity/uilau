@@ -1,26 +1,15 @@
-use crate::interface::{SimpleEmitter, SimpleTrait};
+use crate::interface::*;
 
-pub struct Simple {
-    emit: SimpleEmitter,
-    message: String,
+extern crate gstreamer as gst;
+
+use std::sync::{Arc};
+
+// We need to create `Player` struct and implement `PlayerTrait` trait on it
+// Put Qt-related properties and GStreamer-related properties in the same struct (as Quemail does)
+
+// this struct is referred from both of main.rs and interface.rs so is put here
+pub struct Player {
+  pub emit: PlayerEmitter,
+  pub playbin: gst::Element,
+  pub sink: Arc<gst::Element>,
 }
-
-impl SimpleTrait for Simple {
-    fn new(emit: SimpleEmitter) -> Simple {
-        Simple {
-            emit: emit,
-            message: String::new(),
-        }
-    }
-    fn emit(&mut self) -> &mut SimpleEmitter {
-        &mut self.emit
-    }
-    fn message(&self) -> &str {
-        "Hello World!" 
-    }
-    fn set_message(&mut self, value: String) {
-        self.message = value;
-        self.emit.message_changed();
-    }
-}
-

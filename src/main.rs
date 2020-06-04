@@ -1,25 +1,20 @@
 extern crate libc;
-
 extern crate gstreamer as gst;
-use gst::prelude::*;
-
+extern crate gstreamer_editing_services as ges;
 extern crate gstreamer_sys;
-
-extern crate glib;
-use glib::translate::{ToGlib, FromGlib};
-
 extern crate gobject_sys;
+extern crate glib;
+
+mod implementation;
+mod interface;
+
+use glib::translate::{ToGlib, FromGlib};
+use gst::prelude::*;
+use ges::prelude::*;
 
 use std::sync::{Arc, Mutex};
 
-mod implementation;
 use implementation::*;
-// pub mod interface {
-//   // include!(concat!(env!("OUT_DIR"), "/src/interface.rs"));
-//   include!("./interface.rs");
-// }
-
-mod interface;
 use interface::*;
 
 // I couldn't avoid using global state...

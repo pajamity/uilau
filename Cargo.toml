@@ -19,6 +19,8 @@ gstreamer-audio = "0.15.3"
 gio = "0.8.1"
 gstreamer-editing-services = "0.15.0"
 libc = "*"
+gstreamer-sys = "0.8.1"
+gobject-sys = "0.9.1"
 
 [build-dependencies]
 rust_qt_binding_generator = "0.3.5"

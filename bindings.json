@@ -1,19 +1,23 @@
 {
-    "cppFile": "Bindings.cpp",
-    "rust": {
-        "dir": "",
-        "interfaceModule": "interface",
-        "implementationModule": "implementation"
-    },
-    "objects": {
-        "Simple": {
-            "type": "Object",
-            "properties": {
-                "message": {
-                    "type": "QString",
-                    "write": true
-                }
-            }
+  "cppFile": "Bindings.cpp",
+  "rust": {
+    "dir": "",
+    "interfaceModule": "interface",
+    "implementationModule": "implementation"
+  },
+  "objects": {
+    "Player": {
+      "type": "Object",
+      "functions": {
+        "play": {
+          "return": "void",
+          "mut": true
+        },
+        "pause": {
+          "return": "void",
+          "mut": true
         }
+      }
     }
+  }
 }
