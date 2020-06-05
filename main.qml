@@ -81,12 +81,14 @@ ApplicationWindow {
       function play() {
         this.playing = true
         this.text = "Pause"
+        previewSliderTimer.start()
         app.play()
       }
 
       function pause() {
         this.playing = false
         this.text = "Play"
+        previewSliderTimer.stop()
         app.pause()
       }
       
@@ -106,7 +108,9 @@ ApplicationWindow {
       height: 30
       text: "First"
 
-      // todo: implement
+      onClicked: {
+        app.seekTo(0)
+      }
     }
 
     Slider {
@@ -128,7 +132,7 @@ ApplicationWindow {
       id: previewSliderTimer
       interval: 500
       repeat: true
-      running: true // todo: run only when needed
+      running: false
 
       onTriggered: {
         previewSlider.value = app.positionMs
@@ -143,7 +147,9 @@ ApplicationWindow {
       height: 30
       text: "Last"
 
-      // todo: implement
+      onClicked: {
+        app.seekTo(app.durationMs)
+      }
     }
   }
 
