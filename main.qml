@@ -1,6 +1,7 @@
 import QtQuick 2.14
 import QtQuick.Controls 2.14
 import QtQuick.Window 2.14
+import QtQuick.Layouts 1.14
 import RustCode 1.0
 
 import org.freedesktop.gstreamer.GLVideoItem 1.0
@@ -13,7 +14,7 @@ ApplicationWindow {
 
   App {
     id: app
-  } 
+  }
 
   menuBar: MenuBar {
     Menu {
@@ -163,6 +164,157 @@ ApplicationWindow {
     
     contentItem: Text {
       text: qsTr("uilau beta\n")
+    }
+  }
+
+  Window {
+    id: timeline
+    visible: true
+    width: 640
+    height: 400
+    title: qsTr("timeline")
+
+    property int rulerHeight: 40
+    property int layerHeight: 40
+
+    GridLayout { // todo: vs. GridLayout?
+      id: grid
+      columns: 2
+      anchors.fill: parent
+
+      Item {
+        id: leftTop
+        height: timeline.rulerHeight
+        width: 70
+        Text {
+          text: "Root"
+        }
+
+        // todo: scaling
+        // Slider {
+        //   value: 1
+        //   from: 0
+        //   to: 10
+        // }
+      }
+
+      ScrollView {
+        Layout.fillWidth: true
+        height: timeline.rulerHeight
+        id: timeRulerScrollView
+        clip: true
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+        Item {
+          height: parent.height
+          implicitHeight: parent.height
+          implicitWidth: 1000
+          
+          // todo
+          // ListView {
+          Repeater {
+            model: 100
+            
+            Rectangle {
+              x: 10 * index
+              y: index % 5 == 0 ? 10 : 20
+              width: 1
+              height: parent.height - (index % 5 == 0 ? 15 : 25)
+              color: "gray"
+            }
+          }
+
+          Rectangle {
+            height: 1
+            width: 1000
+            color: "black"
+            y: parent.height - 5
+          }
+        }
+      }
+
+      ScrollView {
+        id: layerListScrollView
+        width: leftTop.width
+        Layout.fillHeight: true
+        clip: true
+
+        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+        ScrollBar.vertical.interactive: true
+        // fixme: scrollbars are way too fast
+
+        // todo
+        // ListView {
+        Item {
+          implicitHeight: timeline.layerHeight * 100
+          implicitWidth: 70
+
+          Repeater {
+            model: 100
+            Rectangle {
+              x: parent.x
+              y: parent.y + timeline.layerHeight * index + 1
+              width: 70
+              height: timeline.layerHeight - 2
+              border.color: "black"
+              border.width: 1
+
+              Text {
+                anchors.centerIn: parent
+                anchors.fill: parent
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                text: "Layer " + index
+              }
+            }
+          }
+        }
+      }
+
+      ScrollView {
+        id: trackAreaScrollView
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        clip: true
+
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOn
+        ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+        
+        Item {
+          implicitHeight: timeline.layerHeight * 100
+          implicitWidth: 1000 // todo
+
+          Repeater {
+            model: 100
+
+            Rectangle {
+              x: parent.x
+              y: parent.y + index * timeline.layerHeight
+              width: 1000
+              height: 1
+              color: "gray"
+            }
+          }
+
+          // TimelineObject
+          Rectangle {
+            id: timelineObject1
+            y: 2 * timeline.layerHeight
+            x: 100
+            height: timeline.layerHeight
+            width: 300
+            gradient: Gradient {
+              GradientStop { position: 0.0; color: "blue" }
+              GradientStop { position: 1.0; color: "darkblue" }
+            }
+
+            Text {
+              color: "white"
+              text: "Sample Object"
+            }
+          }
+        }
+      }
     }
   }
 }
