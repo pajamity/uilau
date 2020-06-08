@@ -177,6 +177,8 @@ ApplicationWindow {
     property int rulerHeight: 40
     property int layerHeight: 40
 
+    property string objectKey: "object"
+
     GridLayout { // todo: vs. GridLayout?
       id: grid
       columns: 2
@@ -285,16 +287,52 @@ ApplicationWindow {
           implicitHeight: timeline.layerHeight * 100
           implicitWidth: 1000 // todo
 
+          // ListView {
           Repeater {
+            id: layerListView
             model: 100
 
+            // delegate: Rectangle {
             Rectangle {
-              x: parent.x
-              y: parent.y + index * timeline.layerHeight
-              width: 1000
-              height: 1
-              color: "gray"
+              id: layerRect
+              width: 1000 // todo
+              height: timeline.layerHeight
+              y: index * timeline.layerHeight
+              color: layerMouseArea.containsMouse ? "lightgray" : "white"
+
+              Rectangle {
+                y: index * timeline.layerHeight
+                width: 1000
+                height: 1
+                color: "gray"
+              }
+
+              MouseArea {
+                id: layerMouseArea
+                hoverEnabled: true
+                anchors.fill: parent
+              }
+
+              DropArea {
+                id: layerDragTarget
+                anchors.fill: parent
+
+                keys: [timeline.objectKey]
+                states: State {
+                  when: layerDragTarget.containsDrag
+                  PropertyChanges {
+                    target: layerRect
+                    color: "lightgray"
+                  }
+                }
+
+                onDropped: {
+                  console.log(drop)
+                  
+                }
+              }
             }
+            
           }
 
           // TimelineObject
@@ -312,6 +350,23 @@ ApplicationWindow {
             Text {
               color: "white"
               text: "Sample Object"
+            }
+
+            Drag.keys: [timeline.objectKey]
+            Drag.active: objectMouseArea.drag.active
+            Drag.hotSpot.x: 10
+            Drag.hotSpot.y: 10
+            states: State {
+              when: objectMouseArea.drag.active
+              // AnchorChanges {
+              //   target: timelineObject1
+              // }
+            }
+
+            MouseArea {
+              id: objectMouseArea
+              anchors.fill: parent
+              drag.target: parent
             }
           }
         }
