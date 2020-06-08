@@ -203,12 +203,12 @@ ApplicationWindow {
         height: timeline.rulerHeight
         id: timeRulerScrollView
         clip: true
-        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        ScrollBar.horizontal: horizontalScrollBar
 
         Item {
           height: parent.height
           implicitHeight: parent.height
-          implicitWidth: 1000
+          implicitWidth: 1000 // todo
           
           // todo
           // ListView {
@@ -239,8 +239,9 @@ ApplicationWindow {
         Layout.fillHeight: true
         clip: true
 
-        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
-        ScrollBar.vertical.interactive: true
+        // ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+        // ScrollBar.vertical.interactive: true
+        ScrollBar.vertical: verticalScrollBar
         // fixme: scrollbars are way too fast
 
         // todo
@@ -277,8 +278,8 @@ ApplicationWindow {
         Layout.fillHeight: true
         clip: true
 
-        ScrollBar.horizontal.policy: ScrollBar.AlwaysOn
-        ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+        ScrollBar.horizontal: horizontalScrollBar
+        ScrollBar.vertical: verticalScrollBar
         
         Item {
           implicitHeight: timeline.layerHeight * 100
@@ -315,6 +316,20 @@ ApplicationWindow {
           }
         }
       }
+    }
+
+    ScrollBar {
+      id: verticalScrollBar
+      height: parent.height
+      anchors.right: parent.right
+      policy: ScrollBar.AlwaysOff // fixme: AlwaysOn shows weird scrollbar
+    }
+
+    ScrollBar {
+      id: horizontalScrollBar
+      width: parent.width
+      anchors.bottom: parent.bottom
+      policy: ScrollBar.AlwaysOff
     }
   }
 }
