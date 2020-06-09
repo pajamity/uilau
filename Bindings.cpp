@@ -2,6 +2,11 @@
 #include "Bindings.h"
 
 namespace {
+
+    typedef void (*qstring_set)(QString* val, const char* utf8, int nbytes);
+    void set_qstring(QString* val, const char* utf8, int nbytes) {
+        *val = QString::fromUtf8(utf8, nbytes);
+    }
     inline void appDurationMsChanged(App* o)
     {
         Q_EMIT o->durationMsChanged();
@@ -16,6 +21,7 @@ extern "C" {
     void app_free(App::Private*);
     quint64 app_duration_ms_get(const App::Private*);
     quint64 app_position_ms_get(const App::Private*);
+    void app_move_timeline_object(const App::Private*, const ushort*, int, quint64, float);
     void app_pause(App::Private*);
     void app_play(App::Private*);
     void app_seek_to(App::Private*, quint64);
@@ -49,6 +55,10 @@ quint64 App::durationMs() const
 quint64 App::positionMs() const
 {
     return app_position_ms_get(m_d);
+}
+void App::moveTimelineObject(const QString& object_id, quint64 dst_layer_id, float dst_time_ms) const
+{
+    return app_move_timeline_object(m_d, object_id.utf16(), object_id.size(), dst_layer_id, dst_time_ms);
 }
 void App::pause()
 {

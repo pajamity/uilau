@@ -82,6 +82,45 @@ impl AppTrait for App {
       eprintln!("Seeking failed");
     }
   }
+
+  fn move_timeline_object(&self, object_id: String, dst_layer_id: u64, dst_time_ms: f32) {
+    let dst_layer_id = dst_layer_id as usize;
+    // fixme: not efficient if we had lots of objects
+    let layers = self.project.layers.clone();
+    let mut dst_layer = {
+      let layers = layers.clone();
+      let layers = &mut *layers.lock().unwrap();
+      layers[dst_layer_id].clone()
+    };
+
+    let mut layers = &mut *layers.lock().unwrap();
+    for (layer_id, layer) in layers.iter().enumerate() {
+      let mut layer = &mut *layer.lock().unwrap();
+      let objects = layer.objects.clone();
+      let objects = &*objects.lock().unwrap();
+      for (_, obj) in objects {
+        let objj = obj.clone();
+        let mut obj = &mut *obj.lock().unwrap();
+        if obj.id == object_id {
+          println!("Found obj: {}", obj.id);
+
+          // move between layers
+          if layer_id != dst_layer_id {
+            layer.remove_object(&mut obj);
+
+            let d = dst_layer.clone();
+            obj.set_layer(d);
+            let dst_layer = &mut *dst_layer.lock().unwrap();
+            dst_layer.add_object(objj);
+          }
+
+          // move inside layers
+          obj.set_start((dst_time_ms * 1000.0) as u64 * gst::USECOND);
+        }
+      }
+    }
+
+  }
 }
 
 impl App {

@@ -24,6 +24,24 @@
             "name": "to",
             "type": "quint64"
           }]
+        },
+        "moveTimelineObject": {
+          "return": "void",
+          "mut": false,
+          "arguments": [
+            {
+              "name": "object_id",
+              "type": "QString"
+            }, 
+            {
+              "name": "dst_layer_id",
+              "type": "quint64"
+            },
+            {
+              "name": "dst_time_ms",
+              "type": "float"
+            }
+          ]
         }
       },
       "properties": {

@@ -176,8 +176,13 @@ ApplicationWindow {
 
     property int rulerHeight: 40
     property int layerHeight: 40
+    property real pixelPerSecond: 10
 
     property string objectKey: "object"
+
+    function timeMsForPosition(x) {
+      return x / pixelPerSecond * 1000.0
+    }
 
     GridLayout { // todo: vs. GridLayout?
       id: grid
@@ -202,8 +207,8 @@ ApplicationWindow {
 
       ScrollView {
         Layout.fillWidth: true
-        height: timeline.rulerHeight
         id: timeRulerScrollView
+        height: timeline.rulerHeight
         clip: true
         ScrollBar.horizontal: horizontalScrollBar
 
@@ -218,7 +223,7 @@ ApplicationWindow {
             model: 100
             
             Rectangle {
-              x: 10 * index
+              x: timeline.pixelPerSecond * index
               y: index % 5 == 0 ? 10 : 20
               width: 1
               height: parent.height - (index % 5 == 0 ? 15 : 25)
@@ -300,6 +305,8 @@ ApplicationWindow {
               y: index * timeline.layerHeight
               color: layerMouseArea.containsMouse ? "lightgray" : "white"
 
+              property int layerId: index
+
               Rectangle {
                 y: index * timeline.layerHeight
                 width: 1000
@@ -330,6 +337,7 @@ ApplicationWindow {
                   drop.accept()
 
                   drop.source.y = parent.y
+                  app.moveTimelineObject(drop.source.objectId, parent.layerId, timeline.timeMsForPosition(drop.source.x))
                   return Qt.MoveAction
                 }
               }
@@ -348,6 +356,8 @@ ApplicationWindow {
               GradientStop { position: 0.0; color: "blue" }
               GradientStop { position: 1.0; color: "darkblue" }
             }
+
+            property int objectId: 0
 
             Text {
               color: "white"

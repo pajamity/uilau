@@ -23,6 +23,7 @@ public:
     ~App();
     quint64 durationMs() const;
     quint64 positionMs() const;
+    Q_INVOKABLE void moveTimelineObject(const QString& object_id, quint64 dst_layer_id, float dst_time_ms) const;
     Q_INVOKABLE void pause();
     Q_INVOKABLE void play();
     Q_INVOKABLE void seekTo(quint64 to);

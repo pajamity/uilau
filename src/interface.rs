@@ -9,6 +9,34 @@ use std::ptr::null;
 
 use crate::qt_impl::app_impl::App;
 
+pub enum QString {}
+
+fn set_string_from_utf16(s: &mut String, str: *const c_ushort, len: c_int) {
+    let utf16 = unsafe { slice::from_raw_parts(str, to_usize(len)) };
+    let characters = decode_utf16(utf16.iter().cloned())
+        .map(|r| r.unwrap());
+    s.clear();
+    s.extend(characters);
+}
+
+
+
+fn to_usize(n: c_int) -> usize {
+    if n < 0 {
+        panic!("Cannot cast {} to usize", n);
+    }
+    n as usize
+}
+
+
+fn to_c_int(n: usize) -> c_int {
+    if n > c_int::max_value() as usize {
+        panic!("Cannot cast {} to c_int", n);
+    }
+    n as c_int
+}
+
+
 pub struct AppQObject {}
 
 pub struct AppEmitter {
@@ -56,6 +84,7 @@ pub trait AppTrait {
     fn emit(&mut self) -> &mut AppEmitter;
     fn duration_ms(&self) -> u64;
     fn position_ms(&self) -> u64;
+    fn move_timeline_object(&self, object_id: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
     fn pause(&mut self) -> ();
     fn play(&mut self) -> ();
     fn seek_to(&mut self, to: u64) -> ();
@@ -89,6 +118,14 @@ pub unsafe extern "C" fn app_duration_ms_get(ptr: *const App) -> u64 {
 #[no_mangle]
 pub unsafe extern "C" fn app_position_ms_get(ptr: *const App) -> u64 {
     (&*ptr).position_ms()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_move_timeline_object(ptr: *const App, object_id_str: *const c_ushort, object_id_len: c_int, dst_layer_id: u64, dst_time_ms: f32) {
+    let mut object_id = String::new();
+    set_string_from_utf16(&mut object_id, object_id_str, object_id_len);
+    let o = &*ptr;
+    o.move_timeline_object(object_id, dst_layer_id, dst_time_ms)
 }
 
 #[no_mangle]
