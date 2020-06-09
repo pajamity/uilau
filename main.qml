@@ -327,8 +327,10 @@ ApplicationWindow {
                 }
 
                 onDropped: {
-                  console.log(drop)
-                  
+                  drop.accept()
+
+                  drop.source.y = parent.y
+                  return Qt.MoveAction
                 }
               }
             }
@@ -354,6 +356,7 @@ ApplicationWindow {
 
             Drag.keys: [timeline.objectKey]
             Drag.active: objectMouseArea.drag.active
+            Drag.supportedActions: Qt.MoveAction
             Drag.hotSpot.x: 10
             Drag.hotSpot.y: 10
             states: State {
@@ -367,6 +370,8 @@ ApplicationWindow {
               id: objectMouseArea
               anchors.fill: parent
               drag.target: parent
+
+              onReleased: parent.Drag.drop()
             }
           }
         }
