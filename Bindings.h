@@ -27,6 +27,7 @@ public:
     Q_INVOKABLE void pause();
     Q_INVOKABLE void play();
     Q_INVOKABLE void seekTo(quint64 to);
+    Q_INVOKABLE void timelineAddFileObject(const QString& file_urls, quint64 dst_layer_id, float dst_time_ms);
 Q_SIGNALS:
     void durationMsChanged();
     void positionMsChanged();

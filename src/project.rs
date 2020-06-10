@@ -40,4 +40,9 @@ impl Project {
 
     ret
   }
+
+  pub fn get_layer(&self, layer_id: usize) -> Arc<Mutex<Layer>> {
+    let layers = &*self.layers.lock().unwrap();
+    layers[layer_id].clone()
+  }
 }

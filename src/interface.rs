@@ -88,6 +88,7 @@ pub trait AppTrait {
     fn pause(&mut self) -> ();
     fn play(&mut self) -> ();
     fn seek_to(&mut self, to: u64) -> ();
+    fn timeline_add_file_object(&mut self, file_urls: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
 }
 
 #[no_mangle]
@@ -144,4 +145,12 @@ pub unsafe extern "C" fn app_play(ptr: *mut App) {
 pub unsafe extern "C" fn app_seek_to(ptr: *mut App, to: u64) {
     let o = &mut *ptr;
     o.seek_to(to)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_timeline_add_file_object(ptr: *mut App, file_urls_str: *const c_ushort, file_urls_len: c_int, dst_layer_id: u64, dst_time_ms: f32) {
+    let mut file_urls = String::new();
+    set_string_from_utf16(&mut file_urls, file_urls_str, file_urls_len);
+    let o = &mut *ptr;
+    o.timeline_add_file_object(file_urls, dst_layer_id, dst_time_ms)
 }

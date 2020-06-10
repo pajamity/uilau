@@ -25,6 +25,7 @@ extern "C" {
     void app_pause(App::Private*);
     void app_play(App::Private*);
     void app_seek_to(App::Private*, quint64);
+    void app_timeline_add_file_object(App::Private*, const ushort*, int, quint64, float);
 };
 
 App::App(bool /*owned*/, QObject *parent):
@@ -71,4 +72,8 @@ void App::play()
 void App::seekTo(quint64 to)
 {
     return app_seek_to(m_d, to);
+}
+void App::timelineAddFileObject(const QString& file_urls, quint64 dst_layer_id, float dst_time_ms)
+{
+    return app_timeline_add_file_object(m_d, file_urls.utf16(), file_urls.size(), dst_layer_id, dst_time_ms);
 }

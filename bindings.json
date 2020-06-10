@@ -42,6 +42,24 @@
               "type": "float"
             }
           ]
+        },
+        "timelineAddFileObject": {
+          "return": "void",
+          "mut": true,
+          "arguments": [
+            {
+              "name": "file_urls",
+              "type": "QString"
+            }, 
+            {
+              "name": "dst_layer_id",
+              "type": "quint64"
+            },
+            {
+              "name": "dst_time_ms",
+              "type": "float"
+            }
+          ]
         }
       },
       "properties": {

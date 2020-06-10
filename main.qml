@@ -2,6 +2,7 @@ import QtQuick 2.14
 import QtQuick.Controls 2.14
 import QtQuick.Window 2.14
 import QtQuick.Layouts 1.14
+import QtQuick.Dialogs 1.3
 import RustCode 1.0
 
 import org.freedesktop.gstreamer.GLVideoItem 1.0
@@ -318,6 +319,47 @@ ApplicationWindow {
                 id: layerMouseArea
                 hoverEnabled: true
                 anchors.fill: parent
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+                property real lastClickedX: -1
+
+                onClicked: {
+                  if (mouse.button == Qt.RightButton) {
+                    layerContextMenu.popup()
+                  }
+                  lastClickedX = mouse.x
+                }
+                onPressAndHold: {
+                  if (mouse.button == Qt.RightButton) {
+                    layerContextMenu.popup()
+                  }
+                }
+
+                Menu {
+                  id: layerContextMenu
+                  Menu {
+                    title: qsTr("Add Media Object")
+                    Action {
+                      text: qsTr("Load File")
+                      onTriggered: {
+                        timelineOpenFileDialog.openDialog(layerId, layerMouseArea.lastClickedX)
+                      }
+                    }
+                    Action {
+                      text: qsTr("Text")
+                      // todo: implement
+                    }
+                    // todo: implement
+                  }
+                  Action {
+                    text: qsTr("Add Filter Object")
+                    // todo: implement
+                  }
+
+                  MenuSeparator {}
+
+                  // todo: implement other menu items
+                }
               }
 
               DropArea {
@@ -401,5 +443,40 @@ ApplicationWindow {
       anchors.bottom: parent.bottom
       policy: ScrollBar.AlwaysOff
     }
+  }
+
+  FileDialog {
+    id: timelineOpenFileDialog
+    title: "Choose File..."
+    folder: shortcuts.home
+    visible: false
+
+    property int layerId: -1
+    property real x: -1
+
+    onAccepted: {
+      // rust_qt_binding_generator currently cannot bind QList<QUrl> arguments
+      let urls = fileUrls.join("::::") // fixme
+      console.log(urls)
+      app.timelineAddFileObject(urls, layerId, timeline.timeMsForPosition(x))
+    }
+
+    onRejected: {
+      console.log("cancelled")
+    }
+
+    function openDialog(layerId, x) {
+      this.layerId = layerId
+      this.x = x
+      this.open()
+    }
+
+    // onAccepted is read-only (make use of signals?)
+    // function openWithCallback(cb) { // cb: function that takes a list<url>
+    //   this.onAccepted = function() {
+    //     cb(this.fileUrls)
+    //   }
+    //   this.open()
+    // }
   }
 }

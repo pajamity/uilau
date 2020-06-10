@@ -87,15 +87,11 @@ impl AppTrait for App {
     let dst_layer_id = dst_layer_id as usize;
     // fixme: not efficient if we had lots of objects
     let layers = self.project.layers.clone();
-    let mut dst_layer = {
-      let layers = layers.clone();
-      let layers = &mut *layers.lock().unwrap();
-      layers[dst_layer_id].clone()
-    };
+    let dst_layer = self.project.get_layer(dst_layer_id as usize);
 
-    let mut layers = &mut *layers.lock().unwrap();
+    let layers = &mut *layers.lock().unwrap();
     for (layer_id, layer) in layers.iter().enumerate() {
-      let mut layer = &mut *layer.lock().unwrap();
+      let layer = &mut *layer.lock().unwrap();
       let objects = layer.objects.clone();
       let objects = &*objects.lock().unwrap();
       for (_, obj) in objects {
@@ -119,7 +115,20 @@ impl AppTrait for App {
         }
       }
     }
+  }
 
+  fn timeline_add_file_object(&mut self, file_urls: String, dst_layer_id: u64, dst_time_ms: f32) {
+    println!("ff {}", file_urls);
+    for url in file_urls.split("::::") {
+      println!("Opening {}", url);
+
+      let clip = ges::UriClip::new(&url).expect("Could not create clip");
+      let layer_ = self.project.get_layer(dst_layer_id as usize);
+      let mut obj = Object::new_from_uri_clip("v9", "piyo", (dst_time_ms * 1000.0) as u64 * gst::USECOND, clip);
+      let layer = &mut *layer_.lock().unwrap();
+      obj.set_layer(layer_.clone());
+      layer.add_object(Arc::new(Mutex::new(obj)));
+    }
   }
 }
 
