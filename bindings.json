@@ -68,7 +68,53 @@
         },
         "positionMs": {
           "type": "quint64"
+        },
+        "layers": {
+          "type": "Layers"
+        },
+        "objects": {
+          "type": "TimelineObjects"
         }
+      }
+    },
+    "Layers": {
+      "type": "List",
+      "properties": {
+
+      },
+      "itemProperties": {
+      },
+      "functions": {
+
+      }
+    },
+    "TimelineObjects": {
+      "type": "List",
+      "properties": {
+        
+      },
+      "itemProperties": {
+        "id": {
+          "type": "QString"
+        },
+        "name": {
+          "type": "QString"
+        },
+        "kind": {
+          "type": "QString"
+        },
+        "lengthMs": {
+          "type": "quint64"
+        },
+        "startMs": {
+          "type": "quint64"
+        },
+        "layerId": {
+          "type": "quint64"
+        }
+      },
+      "functions": {
+
       }
     }
   }

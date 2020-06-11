@@ -7,7 +7,45 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicPtr, Ordering};
 use std::ptr::null;
 
-use crate::qt_impl::app_impl::App;
+use crate::qt_impl::*;
+
+
+#[repr(C)]
+pub struct COption<T> {
+    data: T,
+    some: bool,
+}
+
+impl<T> COption<T> {
+    #![allow(dead_code)]
+    fn into(self) -> Option<T> {
+        if self.some {
+            Some(self.data)
+        } else {
+            None
+        }
+    }
+}
+
+impl<T> From<Option<T>> for COption<T>
+where
+    T: Default,
+{
+    fn from(t: Option<T>) -> COption<T> {
+        if let Some(v) = t {
+            COption {
+                data: v,
+                some: true,
+            }
+        } else {
+            COption {
+                data: T::default(),
+                some: false,
+            }
+        }
+    }
+}
+
 
 pub enum QString {}
 
@@ -19,6 +57,20 @@ fn set_string_from_utf16(s: &mut String, str: *const c_ushort, len: c_int) {
     s.extend(characters);
 }
 
+
+
+#[repr(C)]
+#[derive(PartialEq, Eq, Debug)]
+pub enum SortOrder {
+    Ascending = 0,
+    Descending = 1,
+}
+
+#[repr(C)]
+pub struct QModelIndex {
+    row: c_int,
+    internal_id: usize,
+}
 
 
 fn to_usize(n: c_int) -> usize {
@@ -80,9 +132,15 @@ impl AppEmitter {
 }
 
 pub trait AppTrait {
-    fn new(emit: AppEmitter) -> Self;
+    fn new(emit: AppEmitter,
+        layers: Layers,
+        objects: TimelineObjects) -> Self;
     fn emit(&mut self) -> &mut AppEmitter;
     fn duration_ms(&self) -> u64;
+    fn layers(&self) -> &Layers;
+    fn layers_mut(&mut self) -> &mut Layers;
+    fn objects(&self) -> &TimelineObjects;
+    fn objects_mut(&mut self) -> &mut TimelineObjects;
     fn position_ms(&self) -> u64;
     fn move_timeline_object(&self, object_id: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
     fn pause(&mut self) -> ();
@@ -95,14 +153,80 @@ pub trait AppTrait {
 pub extern "C" fn app_new(
     app: *mut AppQObject,
     app_duration_ms_changed: fn(*mut AppQObject),
+    layers: *mut LayersQObject,
+    layers_new_data_ready: fn(*mut LayersQObject),
+    layers_layout_about_to_be_changed: fn(*mut LayersQObject),
+    layers_layout_changed: fn(*mut LayersQObject),
+    layers_data_changed: fn(*mut LayersQObject, usize, usize),
+    layers_begin_reset_model: fn(*mut LayersQObject),
+    layers_end_reset_model: fn(*mut LayersQObject),
+    layers_begin_insert_rows: fn(*mut LayersQObject, usize, usize),
+    layers_end_insert_rows: fn(*mut LayersQObject),
+    layers_begin_move_rows: fn(*mut LayersQObject, usize, usize, usize),
+    layers_end_move_rows: fn(*mut LayersQObject),
+    layers_begin_remove_rows: fn(*mut LayersQObject, usize, usize),
+    layers_end_remove_rows: fn(*mut LayersQObject),
+    objects: *mut TimelineObjectsQObject,
+    objects_new_data_ready: fn(*mut TimelineObjectsQObject),
+    objects_layout_about_to_be_changed: fn(*mut TimelineObjectsQObject),
+    objects_layout_changed: fn(*mut TimelineObjectsQObject),
+    objects_data_changed: fn(*mut TimelineObjectsQObject, usize, usize),
+    objects_begin_reset_model: fn(*mut TimelineObjectsQObject),
+    objects_end_reset_model: fn(*mut TimelineObjectsQObject),
+    objects_begin_insert_rows: fn(*mut TimelineObjectsQObject, usize, usize),
+    objects_end_insert_rows: fn(*mut TimelineObjectsQObject),
+    objects_begin_move_rows: fn(*mut TimelineObjectsQObject, usize, usize, usize),
+    objects_end_move_rows: fn(*mut TimelineObjectsQObject),
+    objects_begin_remove_rows: fn(*mut TimelineObjectsQObject, usize, usize),
+    objects_end_remove_rows: fn(*mut TimelineObjectsQObject),
     app_position_ms_changed: fn(*mut AppQObject),
 ) -> *mut App {
+    let layers_emit = LayersEmitter {
+        qobject: Arc::new(AtomicPtr::new(layers)),
+        new_data_ready: layers_new_data_ready,
+    };
+    let model = LayersList {
+        qobject: layers,
+        layout_about_to_be_changed: layers_layout_about_to_be_changed,
+        layout_changed: layers_layout_changed,
+        data_changed: layers_data_changed,
+        begin_reset_model: layers_begin_reset_model,
+        end_reset_model: layers_end_reset_model,
+        begin_insert_rows: layers_begin_insert_rows,
+        end_insert_rows: layers_end_insert_rows,
+        begin_move_rows: layers_begin_move_rows,
+        end_move_rows: layers_end_move_rows,
+        begin_remove_rows: layers_begin_remove_rows,
+        end_remove_rows: layers_end_remove_rows,
+    };
+    let d_layers = Layers::new(layers_emit, model);
+    let objects_emit = TimelineObjectsEmitter {
+        qobject: Arc::new(AtomicPtr::new(objects)),
+        new_data_ready: objects_new_data_ready,
+    };
+    let model = TimelineObjectsList {
+        qobject: objects,
+        layout_about_to_be_changed: objects_layout_about_to_be_changed,
+        layout_changed: objects_layout_changed,
+        data_changed: objects_data_changed,
+        begin_reset_model: objects_begin_reset_model,
+        end_reset_model: objects_end_reset_model,
+        begin_insert_rows: objects_begin_insert_rows,
+        end_insert_rows: objects_end_insert_rows,
+        begin_move_rows: objects_begin_move_rows,
+        end_move_rows: objects_end_move_rows,
+        begin_remove_rows: objects_begin_remove_rows,
+        end_remove_rows: objects_end_remove_rows,
+    };
+    let d_objects = TimelineObjects::new(objects_emit, model);
     let app_emit = AppEmitter {
         qobject: Arc::new(AtomicPtr::new(app)),
         duration_ms_changed: app_duration_ms_changed,
         position_ms_changed: app_position_ms_changed,
     };
-    let d_app = App::new(app_emit);
+    let d_app = App::new(app_emit,
+        d_layers,
+        d_objects);
     Box::into_raw(Box::new(d_app))
 }
 
@@ -114,6 +238,16 @@ pub unsafe extern "C" fn app_free(ptr: *mut App) {
 #[no_mangle]
 pub unsafe extern "C" fn app_duration_ms_get(ptr: *const App) -> u64 {
     (&*ptr).duration_ms()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_layers_get(ptr: *mut App) -> *mut Layers {
+    (&mut *ptr).layers_mut()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_objects_get(ptr: *mut App) -> *mut TimelineObjects {
+    (&mut *ptr).objects_mut()
 }
 
 #[no_mangle]
@@ -153,4 +287,406 @@ pub unsafe extern "C" fn app_timeline_add_file_object(ptr: *mut App, file_urls_s
     set_string_from_utf16(&mut file_urls, file_urls_str, file_urls_len);
     let o = &mut *ptr;
     o.timeline_add_file_object(file_urls, dst_layer_id, dst_time_ms)
+}
+
+pub struct LayersQObject {}
+
+pub struct LayersEmitter {
+    qobject: Arc<AtomicPtr<LayersQObject>>,
+    new_data_ready: fn(*mut LayersQObject),
+}
+
+unsafe impl Send for LayersEmitter {}
+
+impl LayersEmitter {
+    /// Clone the emitter
+    ///
+    /// The emitter can only be cloned when it is mutable. The emitter calls
+    /// into C++ code which may call into Rust again. If emmitting is possible
+    /// from immutable structures, that might lead to access to a mutable
+    /// reference. That is undefined behaviour and forbidden.
+    pub fn clone(&mut self) -> LayersEmitter {
+        LayersEmitter {
+            qobject: self.qobject.clone(),
+            new_data_ready: self.new_data_ready,
+        }
+    }
+    fn clear(&self) {
+        let n: *const LayersQObject = null();
+        self.qobject.store(n as *mut LayersQObject, Ordering::SeqCst);
+    }
+    pub fn new_data_ready(&mut self) {
+        let ptr = self.qobject.load(Ordering::SeqCst);
+        if !ptr.is_null() {
+            (self.new_data_ready)(ptr);
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct LayersList {
+    qobject: *mut LayersQObject,
+    layout_about_to_be_changed: fn(*mut LayersQObject),
+    layout_changed: fn(*mut LayersQObject),
+    data_changed: fn(*mut LayersQObject, usize, usize),
+    begin_reset_model: fn(*mut LayersQObject),
+    end_reset_model: fn(*mut LayersQObject),
+    begin_insert_rows: fn(*mut LayersQObject, usize, usize),
+    end_insert_rows: fn(*mut LayersQObject),
+    begin_move_rows: fn(*mut LayersQObject, usize, usize, usize),
+    end_move_rows: fn(*mut LayersQObject),
+    begin_remove_rows: fn(*mut LayersQObject, usize, usize),
+    end_remove_rows: fn(*mut LayersQObject),
+}
+
+impl LayersList {
+    pub fn layout_about_to_be_changed(&mut self) {
+        (self.layout_about_to_be_changed)(self.qobject);
+    }
+    pub fn layout_changed(&mut self) {
+        (self.layout_changed)(self.qobject);
+    }
+    pub fn data_changed(&mut self, first: usize, last: usize) {
+        (self.data_changed)(self.qobject, first, last);
+    }
+    pub fn begin_reset_model(&mut self) {
+        (self.begin_reset_model)(self.qobject);
+    }
+    pub fn end_reset_model(&mut self) {
+        (self.end_reset_model)(self.qobject);
+    }
+    pub fn begin_insert_rows(&mut self, first: usize, last: usize) {
+        (self.begin_insert_rows)(self.qobject, first, last);
+    }
+    pub fn end_insert_rows(&mut self) {
+        (self.end_insert_rows)(self.qobject);
+    }
+    pub fn begin_move_rows(&mut self, first: usize, last: usize, destination: usize) {
+        (self.begin_move_rows)(self.qobject, first, last, destination);
+    }
+    pub fn end_move_rows(&mut self) {
+        (self.end_move_rows)(self.qobject);
+    }
+    pub fn begin_remove_rows(&mut self, first: usize, last: usize) {
+        (self.begin_remove_rows)(self.qobject, first, last);
+    }
+    pub fn end_remove_rows(&mut self) {
+        (self.end_remove_rows)(self.qobject);
+    }
+}
+
+pub trait LayersTrait {
+    fn new(emit: LayersEmitter, model: LayersList) -> Self;
+    fn emit(&mut self) -> &mut LayersEmitter;
+    fn row_count(&self) -> usize;
+    fn insert_rows(&mut self, _row: usize, _count: usize) -> bool { false }
+    fn remove_rows(&mut self, _row: usize, _count: usize) -> bool { false }
+    fn can_fetch_more(&self) -> bool {
+        false
+    }
+    fn fetch_more(&mut self) {}
+    fn sort(&mut self, _: u8, _: SortOrder) {}
+}
+
+#[no_mangle]
+pub extern "C" fn layers_new(
+    layers: *mut LayersQObject,
+    layers_new_data_ready: fn(*mut LayersQObject),
+    layers_layout_about_to_be_changed: fn(*mut LayersQObject),
+    layers_layout_changed: fn(*mut LayersQObject),
+    layers_data_changed: fn(*mut LayersQObject, usize, usize),
+    layers_begin_reset_model: fn(*mut LayersQObject),
+    layers_end_reset_model: fn(*mut LayersQObject),
+    layers_begin_insert_rows: fn(*mut LayersQObject, usize, usize),
+    layers_end_insert_rows: fn(*mut LayersQObject),
+    layers_begin_move_rows: fn(*mut LayersQObject, usize, usize, usize),
+    layers_end_move_rows: fn(*mut LayersQObject),
+    layers_begin_remove_rows: fn(*mut LayersQObject, usize, usize),
+    layers_end_remove_rows: fn(*mut LayersQObject),
+) -> *mut Layers {
+    let layers_emit = LayersEmitter {
+        qobject: Arc::new(AtomicPtr::new(layers)),
+        new_data_ready: layers_new_data_ready,
+    };
+    let model = LayersList {
+        qobject: layers,
+        layout_about_to_be_changed: layers_layout_about_to_be_changed,
+        layout_changed: layers_layout_changed,
+        data_changed: layers_data_changed,
+        begin_reset_model: layers_begin_reset_model,
+        end_reset_model: layers_end_reset_model,
+        begin_insert_rows: layers_begin_insert_rows,
+        end_insert_rows: layers_end_insert_rows,
+        begin_move_rows: layers_begin_move_rows,
+        end_move_rows: layers_end_move_rows,
+        begin_remove_rows: layers_begin_remove_rows,
+        end_remove_rows: layers_end_remove_rows,
+    };
+    let d_layers = Layers::new(layers_emit, model);
+    Box::into_raw(Box::new(d_layers))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn layers_free(ptr: *mut Layers) {
+    Box::from_raw(ptr).emit().clear();
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn layers_row_count(ptr: *const Layers) -> c_int {
+    to_c_int((&*ptr).row_count())
+}
+#[no_mangle]
+pub unsafe extern "C" fn layers_insert_rows(ptr: *mut Layers, row: c_int, count: c_int) -> bool {
+    (&mut *ptr).insert_rows(to_usize(row), to_usize(count))
+}
+#[no_mangle]
+pub unsafe extern "C" fn layers_remove_rows(ptr: *mut Layers, row: c_int, count: c_int) -> bool {
+    (&mut *ptr).remove_rows(to_usize(row), to_usize(count))
+}
+#[no_mangle]
+pub unsafe extern "C" fn layers_can_fetch_more(ptr: *const Layers) -> bool {
+    (&*ptr).can_fetch_more()
+}
+#[no_mangle]
+pub unsafe extern "C" fn layers_fetch_more(ptr: *mut Layers) {
+    (&mut *ptr).fetch_more()
+}
+#[no_mangle]
+pub unsafe extern "C" fn layers_sort(
+    ptr: *mut Layers,
+    column: u8,
+    order: SortOrder,
+) {
+    (&mut *ptr).sort(column, order)
+}
+
+pub struct TimelineObjectsQObject {}
+
+pub struct TimelineObjectsEmitter {
+    qobject: Arc<AtomicPtr<TimelineObjectsQObject>>,
+    new_data_ready: fn(*mut TimelineObjectsQObject),
+}
+
+unsafe impl Send for TimelineObjectsEmitter {}
+
+impl TimelineObjectsEmitter {
+    /// Clone the emitter
+    ///
+    /// The emitter can only be cloned when it is mutable. The emitter calls
+    /// into C++ code which may call into Rust again. If emmitting is possible
+    /// from immutable structures, that might lead to access to a mutable
+    /// reference. That is undefined behaviour and forbidden.
+    pub fn clone(&mut self) -> TimelineObjectsEmitter {
+        TimelineObjectsEmitter {
+            qobject: self.qobject.clone(),
+            new_data_ready: self.new_data_ready,
+        }
+    }
+    fn clear(&self) {
+        let n: *const TimelineObjectsQObject = null();
+        self.qobject.store(n as *mut TimelineObjectsQObject, Ordering::SeqCst);
+    }
+    pub fn new_data_ready(&mut self) {
+        let ptr = self.qobject.load(Ordering::SeqCst);
+        if !ptr.is_null() {
+            (self.new_data_ready)(ptr);
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct TimelineObjectsList {
+    qobject: *mut TimelineObjectsQObject,
+    layout_about_to_be_changed: fn(*mut TimelineObjectsQObject),
+    layout_changed: fn(*mut TimelineObjectsQObject),
+    data_changed: fn(*mut TimelineObjectsQObject, usize, usize),
+    begin_reset_model: fn(*mut TimelineObjectsQObject),
+    end_reset_model: fn(*mut TimelineObjectsQObject),
+    begin_insert_rows: fn(*mut TimelineObjectsQObject, usize, usize),
+    end_insert_rows: fn(*mut TimelineObjectsQObject),
+    begin_move_rows: fn(*mut TimelineObjectsQObject, usize, usize, usize),
+    end_move_rows: fn(*mut TimelineObjectsQObject),
+    begin_remove_rows: fn(*mut TimelineObjectsQObject, usize, usize),
+    end_remove_rows: fn(*mut TimelineObjectsQObject),
+}
+
+impl TimelineObjectsList {
+    pub fn layout_about_to_be_changed(&mut self) {
+        (self.layout_about_to_be_changed)(self.qobject);
+    }
+    pub fn layout_changed(&mut self) {
+        (self.layout_changed)(self.qobject);
+    }
+    pub fn data_changed(&mut self, first: usize, last: usize) {
+        (self.data_changed)(self.qobject, first, last);
+    }
+    pub fn begin_reset_model(&mut self) {
+        (self.begin_reset_model)(self.qobject);
+    }
+    pub fn end_reset_model(&mut self) {
+        (self.end_reset_model)(self.qobject);
+    }
+    pub fn begin_insert_rows(&mut self, first: usize, last: usize) {
+        (self.begin_insert_rows)(self.qobject, first, last);
+    }
+    pub fn end_insert_rows(&mut self) {
+        (self.end_insert_rows)(self.qobject);
+    }
+    pub fn begin_move_rows(&mut self, first: usize, last: usize, destination: usize) {
+        (self.begin_move_rows)(self.qobject, first, last, destination);
+    }
+    pub fn end_move_rows(&mut self) {
+        (self.end_move_rows)(self.qobject);
+    }
+    pub fn begin_remove_rows(&mut self, first: usize, last: usize) {
+        (self.begin_remove_rows)(self.qobject, first, last);
+    }
+    pub fn end_remove_rows(&mut self) {
+        (self.end_remove_rows)(self.qobject);
+    }
+}
+
+pub trait TimelineObjectsTrait {
+    fn new(emit: TimelineObjectsEmitter, model: TimelineObjectsList) -> Self;
+    fn emit(&mut self) -> &mut TimelineObjectsEmitter;
+    fn row_count(&self) -> usize;
+    fn insert_rows(&mut self, _row: usize, _count: usize) -> bool { false }
+    fn remove_rows(&mut self, _row: usize, _count: usize) -> bool { false }
+    fn can_fetch_more(&self) -> bool {
+        false
+    }
+    fn fetch_more(&mut self) {}
+    fn sort(&mut self, _: u8, _: SortOrder) {}
+    fn id(&self, index: usize) -> &str;
+    fn kind(&self, index: usize) -> &str;
+    fn layer_id(&self, index: usize) -> u64;
+    fn length_ms(&self, index: usize) -> u64;
+    fn name(&self, index: usize) -> &str;
+    fn start_ms(&self, index: usize) -> u64;
+}
+
+#[no_mangle]
+pub extern "C" fn timeline_objects_new(
+    timeline_objects: *mut TimelineObjectsQObject,
+    timeline_objects_new_data_ready: fn(*mut TimelineObjectsQObject),
+    timeline_objects_layout_about_to_be_changed: fn(*mut TimelineObjectsQObject),
+    timeline_objects_layout_changed: fn(*mut TimelineObjectsQObject),
+    timeline_objects_data_changed: fn(*mut TimelineObjectsQObject, usize, usize),
+    timeline_objects_begin_reset_model: fn(*mut TimelineObjectsQObject),
+    timeline_objects_end_reset_model: fn(*mut TimelineObjectsQObject),
+    timeline_objects_begin_insert_rows: fn(*mut TimelineObjectsQObject, usize, usize),
+    timeline_objects_end_insert_rows: fn(*mut TimelineObjectsQObject),
+    timeline_objects_begin_move_rows: fn(*mut TimelineObjectsQObject, usize, usize, usize),
+    timeline_objects_end_move_rows: fn(*mut TimelineObjectsQObject),
+    timeline_objects_begin_remove_rows: fn(*mut TimelineObjectsQObject, usize, usize),
+    timeline_objects_end_remove_rows: fn(*mut TimelineObjectsQObject),
+) -> *mut TimelineObjects {
+    let timeline_objects_emit = TimelineObjectsEmitter {
+        qobject: Arc::new(AtomicPtr::new(timeline_objects)),
+        new_data_ready: timeline_objects_new_data_ready,
+    };
+    let model = TimelineObjectsList {
+        qobject: timeline_objects,
+        layout_about_to_be_changed: timeline_objects_layout_about_to_be_changed,
+        layout_changed: timeline_objects_layout_changed,
+        data_changed: timeline_objects_data_changed,
+        begin_reset_model: timeline_objects_begin_reset_model,
+        end_reset_model: timeline_objects_end_reset_model,
+        begin_insert_rows: timeline_objects_begin_insert_rows,
+        end_insert_rows: timeline_objects_end_insert_rows,
+        begin_move_rows: timeline_objects_begin_move_rows,
+        end_move_rows: timeline_objects_end_move_rows,
+        begin_remove_rows: timeline_objects_begin_remove_rows,
+        end_remove_rows: timeline_objects_end_remove_rows,
+    };
+    let d_timeline_objects = TimelineObjects::new(timeline_objects_emit, model);
+    Box::into_raw(Box::new(d_timeline_objects))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_free(ptr: *mut TimelineObjects) {
+    Box::from_raw(ptr).emit().clear();
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_row_count(ptr: *const TimelineObjects) -> c_int {
+    to_c_int((&*ptr).row_count())
+}
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_insert_rows(ptr: *mut TimelineObjects, row: c_int, count: c_int) -> bool {
+    (&mut *ptr).insert_rows(to_usize(row), to_usize(count))
+}
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_remove_rows(ptr: *mut TimelineObjects, row: c_int, count: c_int) -> bool {
+    (&mut *ptr).remove_rows(to_usize(row), to_usize(count))
+}
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_can_fetch_more(ptr: *const TimelineObjects) -> bool {
+    (&*ptr).can_fetch_more()
+}
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_fetch_more(ptr: *mut TimelineObjects) {
+    (&mut *ptr).fetch_more()
+}
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_sort(
+    ptr: *mut TimelineObjects,
+    column: u8,
+    order: SortOrder,
+) {
+    (&mut *ptr).sort(column, order)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_data_id(
+    ptr: *const TimelineObjects, row: c_int,
+    d: *mut QString,
+    set: fn(*mut QString, *const c_char, len: c_int),
+) {
+    let o = &*ptr;
+    let data = o.id(to_usize(row));
+    let s: *const c_char = data.as_ptr() as (*const c_char);
+    set(d, s, to_c_int(data.len()));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_data_kind(
+    ptr: *const TimelineObjects, row: c_int,
+    d: *mut QString,
+    set: fn(*mut QString, *const c_char, len: c_int),
+) {
+    let o = &*ptr;
+    let data = o.kind(to_usize(row));
+    let s: *const c_char = data.as_ptr() as (*const c_char);
+    set(d, s, to_c_int(data.len()));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_data_layer_id(ptr: *const TimelineObjects, row: c_int) -> u64 {
+    let o = &*ptr;
+    o.layer_id(to_usize(row))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_data_length_ms(ptr: *const TimelineObjects, row: c_int) -> u64 {
+    let o = &*ptr;
+    o.length_ms(to_usize(row))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_data_name(
+    ptr: *const TimelineObjects, row: c_int,
+    d: *mut QString,
+    set: fn(*mut QString, *const c_char, len: c_int),
+) {
+    let o = &*ptr;
+    let data = o.name(to_usize(row));
+    let s: *const c_char = data.as_ptr() as (*const c_char);
+    set(d, s, to_c_int(data.len()));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_data_start_ms(ptr: *const TimelineObjects, row: c_int) -> u64 {
+    let o = &*ptr;
+    o.start_ms(to_usize(row))
 }

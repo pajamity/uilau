@@ -456,7 +456,7 @@ ApplicationWindow {
 
     onAccepted: {
       // rust_qt_binding_generator currently cannot bind QList<QUrl> arguments
-      let urls = fileUrls.join("::::") // fixme
+      let urls = fileUrls.join("::::") // fixme: better splitter
       console.log(urls)
       app.timelineAddFileObject(urls, layerId, timeline.timeMsForPosition(x))
     }

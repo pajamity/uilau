@@ -8,6 +8,8 @@ use std::sync::{Arc, Mutex, Weak};
 
 use super::layer::Layer;
 
+use crate::interface::TimelineObjectsEmitter;
+
 #[derive(Clone, Copy)]
 pub enum ObjectKind {
   Clip, // corresponds to ges::Clip (should be splitted into Video & Audio?)
@@ -18,7 +20,7 @@ pub enum ObjectKind {
   Filter
 }
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct Object {
   // pub id: Arc<Mutex<String>>,
   pub id: String,
