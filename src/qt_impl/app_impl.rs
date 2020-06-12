@@ -11,6 +11,8 @@ use crate::ffi::*;
 use crate::project::*;
 use crate::object::{Object, ObjectKind};
 
+use super::*;
+
 // functions in main.cpp
 extern {
   fn set_widget_to_sink(sink: *const gstreamer_sys::GstElement, video_item: *const usize);
@@ -19,6 +21,9 @@ extern {
 pub struct App {
   // Qt
   pub emit: AppEmitter,
+  // rust_qt_binding_generator does not allow us to have QObject (Lists) as an item for QList (Layers) so we need to connect Project and these structs dedicated to Qt Model
+  layers: Layers,
+  objects: TimelineObjects,
 
   // GStreamer
   pub project: Project,
@@ -26,12 +31,14 @@ pub struct App {
 }
 
 impl AppTrait for App {
-  fn new(emit: AppEmitter) -> Self {
+  fn new(emit: AppEmitter, layers: Layers, objects: TimelineObjects) -> Self {
     let (project, sink) = Self::setup();
 
     let mut s = Self {
       emit,
       project,
+      layers,
+      objects,
       sink: Arc::new(sink)
     };
     
@@ -47,6 +54,11 @@ impl AppTrait for App {
   fn emit(&mut self) -> &mut AppEmitter {
     &mut self.emit
   }
+
+  fn layers(&self) -> &Layers { &self.layers }
+  fn layers_mut(&mut self) -> &mut Layers { &mut self.layers }
+  fn objects(&self) -> &TimelineObjects { &self.objects }
+  fn objects_mut(&mut self) -> &mut TimelineObjects { &mut self.objects }
 
   fn play(&mut self) {
     self.project.ges_pipeline

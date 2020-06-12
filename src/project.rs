@@ -5,6 +5,7 @@ extern crate gstreamer_editing_services as ges;
 use ges::prelude::*;
 
 use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 
 use super::object::{ObjectKind, Object};
 use super::layer::Layer;
@@ -12,7 +13,10 @@ use super::layer::Layer;
 #[derive(Clone)]
 pub struct Project {
   pub ges_timeline: ges::Timeline,
+  // todo: Arc<Mutex<Vec>> necessary?
+  // pub layers: HashMap<String, Arc<Mutex<Layer>>>,
   pub layers: Arc<Mutex<Vec<Arc<Mutex<Layer>>>>>,
+  pub objects: HashMap<String, Arc<Mutex<Object>>>,
   pub ges_pipeline: ges::Pipeline,
 }
 
@@ -25,6 +29,7 @@ impl Project {
     let s = Self {
       ges_timeline,
       layers: Arc::new(Mutex::new(vec![])),
+      objects: HashMap::new(),
       ges_pipeline: ppl,
     };
 
@@ -41,8 +46,16 @@ impl Project {
     ret
   }
 
-  pub fn get_layer(&self, layer_id: usize) -> Arc<Mutex<Layer>> {
+  pub fn get_layer(&self, layer_id: &str) -> Arc<Mutex<Layer>> {
     let layers = &*self.layers.lock().unwrap();
-    layers[layer_id].clone()
+    layers[String::from(layer_id)].clone()
+  }
+
+  pub fn add_object(&mut self, object: &Arc<Mutex<Object>>) {
+    let obj_ = object.clone();
+    let mut obj = &*object.lock().unwrap();
+
+    let id = String::from(&obj.id);
+    self.objects.insert(id, obj_);
   }
 }

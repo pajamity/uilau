@@ -27,6 +27,8 @@ int main_cpp(const char* appPath) {
     char* argv[1] = { (char*)appPath };
     QGuiApplication app(argc, argv);
     qmlRegisterType<App>("RustCode", 1, 0, "App");
+    qmlRegisterType<TimelineObjects>("RustCode", 1, 0, "TimelineObjects");
+    qmlRegisterType<Layers>("RustCode", 1, 0, "Layers");
 
     QQmlApplicationEngine engine;
     if (QFile("main.qml").exists()) {

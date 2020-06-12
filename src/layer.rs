@@ -5,12 +5,18 @@ use ges::prelude::*;
 
 use std::collections::HashMap;
 
+use super::project::Project;
 use super::object::{ObjectKind, Object};
+
+use crate::qt_impl::*;
 
 #[derive(Clone)]
 pub struct Layer {
+  pub id: String,
+  pub name: Arc<Mutex<String>>,
   pub ges_layer: ges::Layer,
-  pub objects: Arc<Mutex<HashMap<String, Arc<Mutex<Object>>>>>
+
+  pub project: Option<Weak<Project>>,
 }
 
 impl Layer {
@@ -20,16 +26,40 @@ impl Layer {
     let s = Self {
       ges_layer: layer,
       objects: Arc::new(Mutex::new(objects)),
+      None,
     };
 
     s
   }
 
+  pub fn set_project(&mut self, project: &Arc<Project>) {
+    self.project = Some(project.downgrade().unwrap());
+  }
+
+  pub fn objects(&self) -> HashMap<String, Arc<Mutex<Object>>> {
+    let proj = self.project.expect("Project is not set!");
+    let proj = &*proj.upgrade().unwrap();
+
+    proj.objects.into_iter()
+      .filter(|&(_, obj)| {
+        let obj = *obj.lock().unwrap();
+        if let Some(layer) = obj.layer {
+          if let Some(layer) = layer.upgrade() {
+            let layer = layer.lock().unwrap();
+            self.id == layer.id
+          }
+        }
+        false
+      })
+      .collect()
+  }
+
   pub fn add_object(&mut self, object: Arc<Mutex<Object>>) {
-    let obj_ = object.clone();
-    let mut obj = &*object.lock().unwrap();
-    // self cannot own self itself
-    // obj.layer = Some(Weak::new(Mutex::new(self)));
+    self.project.add_object(object.clone());
+
+    let obj = &*object.lock().unwrap();
+    let arc = self.project.get_layer() // Layer doesn't own itself
+    obj.set_layer();
 
     match obj.kind {
       ObjectKind::Clip => {
@@ -38,10 +68,6 @@ impl Layer {
       }
       _ => {}
     }
-
-    let objs = &mut *self.objects.lock().unwrap();
-    let id = String::from(&obj.id);
-    objs.insert(id, obj_);
   }
 
   pub fn remove_object_by_id(&mut self, id: &str) {
@@ -49,9 +75,7 @@ impl Layer {
     let obj = objs.remove(&String::from(id));
 
     if let Some(obj) = obj {
-      println!("trying to lock...");
       let obj = &*obj.lock().unwrap();
-      println!("got lock 7");
       match obj.kind {
         ObjectKind::Clip => {
           let clip = obj.clip.as_ref().expect("No clip is set");
@@ -74,5 +98,9 @@ impl Layer {
       }
       _ => {}
     }
+  }
+
+  pub fn qt_representation(&self) -> TimelineObjects {
+    Timel
   }
 }
