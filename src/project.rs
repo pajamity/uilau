@@ -13,10 +13,8 @@ use super::layer::Layer;
 #[derive(Clone)]
 pub struct Project {
   pub ges_timeline: ges::Timeline,
-  // todo: Arc<Mutex<Vec>> necessary?
-  // pub layers: HashMap<String, Arc<Mutex<Layer>>>,
-  pub layers: Arc<Mutex<Vec<Arc<Mutex<Layer>>>>>,
-  pub objects: HashMap<String, Arc<Mutex<Object>>>,
+  pub layers: Arc<Mutex<HashMap<String, Arc<Mutex<Layer>>>>>,
+  pub objects: Arc<Mutex<HashMap<String, Arc<Mutex<Object>>>>>,
   pub ges_pipeline: ges::Pipeline,
 }
 

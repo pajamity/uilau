@@ -38,6 +38,15 @@ impl TimelineObjectsTrait for TimelineObjects {
   }
 
   fn row_count(&self) -> usize {
+    if let Some(objs) = self.objs {
+      let objs = *objs.lock().unwrap();
+      objs.len()
+    } else {
+      0
+    }
+  }
 
+  fn id(&self, index: usize) -> &str {
+    
   }
 }

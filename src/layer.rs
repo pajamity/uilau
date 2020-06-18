@@ -24,9 +24,9 @@ impl Layer {
     let objects = HashMap::new();
 
     let s = Self {
+
       ges_layer: layer,
-      objects: Arc::new(Mutex::new(objects)),
-      None,
+      project: None,
     };
 
     s

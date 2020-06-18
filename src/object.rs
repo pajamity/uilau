@@ -7,6 +7,8 @@ use ges::prelude::*;
 use std::sync::{Arc, Mutex, Weak};
 
 use super::layer::Layer;
+use crate::interface::*;
+use crate::project::*;
 
 use crate::interface::TimelineObjectsEmitter;
 
@@ -22,7 +24,6 @@ pub enum ObjectKind {
 
 // #[derive(Clone)]
 pub struct Object {
-  // pub id: Arc<Mutex<String>>,
   pub id: String,
   pub name: Arc<Mutex<String>>,
   pub kind: ObjectKind,
