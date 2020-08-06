@@ -140,23 +140,29 @@ impl Project {
   }
 
   pub fn move_object_to_layer(&mut self, obj_name: &str, layer_idx: usize) {
-    println!("{} w", obj_name);
     let obj = self.get_object_by_name(obj_name).unwrap();
     let obj = &mut *obj.lock().unwrap();
 
+    let src = &obj.layer.as_ref().unwrap().upgrade().unwrap();
+
+    let src_idx = self.find_layer_idx(&src).unwrap();
+    if src_idx == layer_idx { return } // No need to move the layer
+
+    let src = &*src.lock().unwrap();
 
     let dst_layer = self.get_layer(layer_idx);
     obj.set_layer(&dst_layer);
 
+
+
     match obj.kind {
       ObjectKind::Clip => {
         let dst = &*dst_layer.lock().unwrap();
-        let src = &*obj.layer.as_ref().unwrap().upgrade().unwrap();
-        let src = &*src.lock().unwrap();
 
         let clip = obj.clip.as_ref().unwrap();
         src.ges_layer.remove_clip(clip).unwrap();
         dst.ges_layer.add_clip(clip).unwrap();
+
       }
       _ => {}
     }

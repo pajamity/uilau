@@ -44,6 +44,12 @@ impl AppTrait for App {
 
     s.layers.set_project(&s.project);
     s.objects.set_project(&s.project);
+
+    {
+      let proj = &*s.project.lock().unwrap();
+      s.layers.set_layers(&proj.layers);
+      s.objects.set_objects(&proj.objects);
+    }
     
     // This constructor is called from `engine.load()` in main_cpp(). But we are going to obtain the address for videoItem later in main_cpp() (set_video_item_pointer())
     // so we wait until the pointer of video_item is passed

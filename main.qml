@@ -379,7 +379,7 @@ ApplicationWindow {
                   drop.accept()
 
                   drop.source.y = parent.y
-                  app.moveTimelineObject(drop.source.objectId, parent.layerId, timeline.timeMsForPosition(drop.source.x))
+                  app.moveTimelineObject(drop.source.objectName, parent.layerId, timeline.timeMsForPosition(drop.source.x))
                   return Qt.MoveAction
                 }
               }
@@ -407,11 +407,11 @@ ApplicationWindow {
                 GradientStop { position: 1.0; color: "darkblue" }
               }
 
-              property int objectId: 0
+              property string objectName: name
 
               Text {
                 color: "white"
-                text: "Sample Object"
+                text: name
               }
 
               Drag.keys: [timeline.objectKey]

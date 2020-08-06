@@ -20,7 +20,7 @@ pub struct TimelineObjects {
 }
 
 impl TimelineObjects {
-  fn set_objects(&mut self, objs: &Arc<Mutex<Vec<Arc<Mutex<Object>>>>>) {
+  pub fn set_objects(&mut self, objs: &Arc<Mutex<Vec<Arc<Mutex<Object>>>>>) {
     self.objects = Some(objs.clone());
   }
 
