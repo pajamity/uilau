@@ -142,7 +142,7 @@ pub trait AppTrait {
     fn objects(&self) -> &TimelineObjects;
     fn objects_mut(&mut self) -> &mut TimelineObjects;
     fn position_ms(&self) -> u64;
-    fn move_timeline_object(&self, object_id: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
+    fn move_timeline_object(&mut self, object_id: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
     fn pause(&mut self) -> ();
     fn play(&mut self) -> ();
     fn seek_to(&mut self, to: u64) -> ();
@@ -256,10 +256,10 @@ pub unsafe extern "C" fn app_position_ms_get(ptr: *const App) -> u64 {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn app_move_timeline_object(ptr: *const App, object_id_str: *const c_ushort, object_id_len: c_int, dst_layer_id: u64, dst_time_ms: f32) {
+pub unsafe extern "C" fn app_move_timeline_object(ptr: *mut App, object_id_str: *const c_ushort, object_id_len: c_int, dst_layer_id: u64, dst_time_ms: f32) {
     let mut object_id = String::new();
     set_string_from_utf16(&mut object_id, object_id_str, object_id_len);
-    let o = &*ptr;
+    let o = &mut *ptr;
     o.move_timeline_object(object_id, dst_layer_id, dst_time_ms)
 }
 
@@ -557,7 +557,6 @@ pub trait TimelineObjectsTrait {
     }
     fn fetch_more(&mut self) {}
     fn sort(&mut self, _: u8, _: SortOrder) {}
-    fn id(&self, index: usize) -> &str;
     fn kind(&self, index: usize) -> &str;
     fn layer_id(&self, index: usize) -> u64;
     fn length_ms(&self, index: usize) -> u64;
@@ -635,18 +634,6 @@ pub unsafe extern "C" fn timeline_objects_sort(
     order: SortOrder,
 ) {
     (&mut *ptr).sort(column, order)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn timeline_objects_data_id(
-    ptr: *const TimelineObjects, row: c_int,
-    d: *mut QString,
-    set: fn(*mut QString, *const c_char, len: c_int),
-) {
-    let o = &*ptr;
-    let data = o.id(to_usize(row));
-    let s: *const c_char = data.as_ptr() as (*const c_char);
-    set(d, s, to_c_int(data.len()));
 }
 
 #[no_mangle]

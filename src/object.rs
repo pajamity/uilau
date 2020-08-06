@@ -24,7 +24,6 @@ pub enum ObjectKind {
 
 // #[derive(Clone)]
 pub struct Object {
-  pub id: String,
   pub name: Arc<Mutex<String>>,
   pub kind: ObjectKind,
   pub length: Arc<Mutex<gst::ClockTime>>,
@@ -37,9 +36,8 @@ pub struct Object {
 }
 
 impl Object {
-  pub fn new(id: &str, name: &str, kind: ObjectKind, length: gst::ClockTime, start: gst::ClockTime) -> Self {
+  pub fn new(name: &str, kind: ObjectKind, length: gst::ClockTime, start: gst::ClockTime) -> Self {
     let s = Self {
-      id: id.to_string(),
       name: Arc::new(Mutex::new(name.to_string())),
       kind,
       length: Arc::new(Mutex::new(length)),
@@ -52,7 +50,7 @@ impl Object {
     s
   }
 
-  pub fn new_from_uri_clip(id: &str, name: &str, start: gst::ClockTime, clip: ges::UriClip) -> Self {
+  pub fn new_from_uri_clip(name: &str, start: gst::ClockTime, clip: ges::UriClip) -> Self {
     let asset = clip.get_asset().unwrap();
     let length = asset
       .downcast::<ges::UriClipAsset>()
@@ -60,7 +58,6 @@ impl Object {
       .get_duration();
 
     Self {
-      id: id.to_string(),
       name: Arc::new(Mutex::new(name.to_string())),
       kind: ObjectKind::Clip,
       length: Arc::new(Mutex::new(length)),
@@ -71,8 +68,8 @@ impl Object {
     }
   }
 
-  pub fn set_layer(&mut self, layer: Arc<Mutex<Layer>>) {
-    self.layer = Some(Arc::downgrade(&layer));
+  pub fn set_layer(&mut self, layer: &Arc<Mutex<Layer>>) {
+    self.layer = Some(Arc::downgrade(layer));
   }
 
   pub fn set_start(&mut self, val: gst::ClockTime) {

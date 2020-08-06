@@ -4,7 +4,7 @@ extern crate gstreamer_editing_services as ges;
 use gst::prelude::*;
 use ges::prelude::*;
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 use std::collections::HashMap;
 
 use crate::interface::*;
@@ -15,12 +15,24 @@ pub struct TimelineObjects {
   emit: TimelineObjectsEmitter,
   model: TimelineObjectsList,
 
-  pub objects: Option<Arc<Mutex<HashMap<String, Arc<Mutex<Object>>>>>>
+  pub objects: Option<Arc<Mutex<Vec<Arc<Mutex<Object>>>>>>,
+  pub project: Option<Weak<Mutex<Project>>>,
 }
 
 impl TimelineObjects {
-  fn set_objects(&mut self, objs: &Arc<Mutex<HashMap<String, Arc<Mutex<Object>>>>>) {
+  fn set_objects(&mut self, objs: &Arc<Mutex<Vec<Arc<Mutex<Object>>>>>) {
     self.objects = Some(objs.clone());
+  }
+
+  pub fn set_project(&mut self, project: &Arc<Mutex<Project>>) {
+    self.project = Some(Arc::downgrade(project));
+  }
+
+  fn get_obj(&self, idx: usize) -> Option<Arc<Mutex<Object>>> {
+    if let Some(objs) = &self.objects {
+      let objs = &*objs.lock().unwrap();
+      Some(objs[idx].clone())
+    } else { None }
   }
 }
 
@@ -29,7 +41,8 @@ impl TimelineObjectsTrait for TimelineObjects {
     Self {
       emit,
       model,
-      objects: None
+      objects: None,
+      project: None
     }
   }
 
@@ -38,15 +51,58 @@ impl TimelineObjectsTrait for TimelineObjects {
   }
 
   fn row_count(&self) -> usize {
-    if let Some(objs) = self.objs {
-      let objs = *objs.lock().unwrap();
+    if let Some(objs) = &self.objects {
+      let objs = &*objs.lock().unwrap();
       objs.len()
     } else {
       0
     }
   }
 
-  fn id(&self, index: usize) -> &str {
-    
+  fn kind(&self, index: usize) -> &str {
+    let obj = self.get_obj(index).unwrap();
+    let obj = &*obj.lock().unwrap();
+    match obj.kind {
+      ObjectKind::Audio => "audio",
+      ObjectKind::Video => "video",
+      ObjectKind::Clip => "clip",
+      ObjectKind::Filter => "filter",
+      ObjectKind::Shape => "shape",
+      ObjectKind::Text => "text"
+    }
+  }
+
+  fn layer_id(&self, index: usize) -> u64 {
+    let obj = self.get_obj(index).unwrap();
+    let obj = &*obj.lock().unwrap();
+    let project = self.project.as_ref().unwrap().upgrade().unwrap();
+    let project = &*project.lock().unwrap();
+    if let Some(layer) = &obj.layer {
+      let layer = layer.upgrade().unwrap();
+      project.find_layer_idx(&layer).unwrap() as u64
+    } else {
+      9999999 // todo
+    }
+  }
+
+  fn length_ms(&self, index: usize) -> u64 {
+    let obj = self.get_obj(index).unwrap();
+    let obj = &*obj.lock().unwrap();
+    let len = *obj.length.lock().unwrap();
+    len.mseconds().unwrap()
+  }
+
+  fn name(&self, index: usize) -> &str {
+    let obj = self.get_obj(index).unwrap();
+    let obj = &*obj.lock().unwrap();
+    let name = &*obj.name.lock().unwrap();
+    Box::leak(format!("{}", name).into_boxed_str())
+  }
+
+  fn start_ms(&self, index: usize) -> u64 {
+    let obj = self.get_obj(index).unwrap();
+    let obj = &*obj.lock().unwrap();
+    let st = *obj.start.lock().unwrap();
+    st.mseconds().unwrap()
   }
 }

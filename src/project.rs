@@ -6,6 +6,7 @@ use ges::prelude::*;
 
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::object::{ObjectKind, Object};
 use super::layer::Layer;
@@ -13,8 +14,8 @@ use super::layer::Layer;
 #[derive(Clone)]
 pub struct Project {
   pub ges_timeline: ges::Timeline,
-  pub layers: Arc<Mutex<HashMap<String, Arc<Mutex<Layer>>>>>,
-  pub objects: Arc<Mutex<HashMap<String, Arc<Mutex<Object>>>>>,
+  pub layers: Arc<Mutex<Vec<Arc<Mutex<Layer>>>>>,
+  pub objects: Arc<Mutex<Vec<Arc<Mutex<Object>>>>>,
   pub ges_pipeline: ges::Pipeline,
 }
 
@@ -27,7 +28,7 @@ impl Project {
     let s = Self {
       ges_timeline,
       layers: Arc::new(Mutex::new(vec![])),
-      objects: HashMap::new(),
+      objects: Arc::new(Mutex::new(vec![])),
       ges_pipeline: ppl,
     };
 
@@ -35,8 +36,9 @@ impl Project {
   }
 
   pub fn add_layer(&mut self) -> Arc<Mutex<Layer>> {
+    let name = Project::random_name_for_layer();
     let ges_layer = self.ges_timeline.append_layer();
-    let layer = Arc::new(Mutex::new(Layer::new(ges_layer)));
+    let layer = Arc::new(Mutex::new(Layer::new(&name, ges_layer)));
     let layers = &mut *self.layers.lock().unwrap();
     let ret = layer.clone();
     &layers.push(layer);
@@ -44,16 +46,126 @@ impl Project {
     ret
   }
 
-  pub fn get_layer(&self, layer_id: &str) -> Arc<Mutex<Layer>> {
+  // Layers
+  pub fn get_layer(&self, layer_idx: usize) -> Arc<Mutex<Layer>> {
     let layers = &*self.layers.lock().unwrap();
-    layers[String::from(layer_id)].clone()
+    layers[layer_idx].clone()
   }
 
+  pub fn find_layer_idx(&self, given: &Arc<Mutex<Layer>>) -> Option<usize> {
+    let name = {
+      let given = &*given.lock().unwrap();
+      given.name.clone()
+    };
+
+    let name = &*name.lock().unwrap().clone();
+    let layers = &*self.layers.lock().unwrap();
+    for (i, layer) in layers.iter().enumerate() {
+      let layer = &*layer.lock().unwrap();
+      let lname = &*layer.name.lock().unwrap();
+      if lname == name {
+        return Some(i)
+      }
+    }
+
+    None
+  }
+
+  // Objects
   pub fn add_object(&mut self, object: &Arc<Mutex<Object>>) {
     let obj_ = object.clone();
-    let mut obj = &*object.lock().unwrap();
+    let objs = &mut *self.objects.lock().unwrap();
+    objs.push(obj_);
+  }
 
-    let id = String::from(&obj.id);
-    self.objects.insert(id, obj_);
+  pub fn remove_object(&mut self, object: &Arc<Mutex<Object>>) {
+    let object = &*object.lock().unwrap();
+    let object_name = &*object.name.lock().unwrap();
+
+    let objs = &mut *self.objects.lock().unwrap();
+    objs.retain(|o| {
+      let o = &*o.lock().unwrap();
+      let o_name = &*o.name.lock().unwrap();
+      object_name != o_name
+    })
+  }
+
+  pub fn remove_object_by_index(&mut self, idx: usize) {
+    let objs = &mut *self.objects.lock().unwrap();
+    objs.remove(idx); // todo: using swap_remove? O(n)->O(1)
+  }
+
+  // Layers + Objects
+  // pub fn get_objects_of_layer(&self, layer: &Arc<Mutex<Layer>>) -> Vec<Arc<Mutex<Object>>> {
+  //   let objs = *self.objects.lock().unwrap();
+  //   objs.retain(|obj| {
+  //
+  //   })
+  // }
+  //
+  // pub fn get_objects_of_layer_by_index(&self, idx: usize) -> Vec<Arc<Mutex<Object>>> {
+  //   let layer = self.get_layer(idx);
+  //   self.get_objects_of_layer(&layer)
+  // }
+
+  pub fn get_object_by_name(&self, name: &str) -> Option<Arc<Mutex<Object>>> {
+    let objs = &*self.objects.lock().unwrap();
+
+    for obj in objs {
+      let ob = &*obj.lock().unwrap();
+      let ob_name = &*ob.name.lock().unwrap();
+      if ob_name == name {
+        return Some(obj.clone())
+      }
+    }
+
+    None
+  }
+
+  pub fn add_object_to_layer(&mut self, obj: &Arc<Mutex<Object>>, layer_idx: usize) {
+    self.add_object(obj);
+
+    let obj = &mut *obj.lock().unwrap();
+    let layer = self.get_layer(layer_idx);
+    let l = &*layer.lock().unwrap();
+
+    obj.set_layer(&layer);
+    match obj.kind {
+      ObjectKind::Clip => {
+        let clip = obj.clip.as_ref().expect("No clip is set");
+        l.ges_layer.add_clip(clip).unwrap();
+      }
+      _ => {}
+    }
+  }
+
+  pub fn move_object_to_layer(&mut self, obj_name: &str, layer_idx: usize) {
+    println!("{} w", obj_name);
+    let obj = self.get_object_by_name(obj_name).unwrap();
+    let obj = &mut *obj.lock().unwrap();
+
+
+    let dst_layer = self.get_layer(layer_idx);
+    obj.set_layer(&dst_layer);
+
+    match obj.kind {
+      ObjectKind::Clip => {
+        let dst = &*dst_layer.lock().unwrap();
+        let src = &*obj.layer.as_ref().unwrap().upgrade().unwrap();
+        let src = &*src.lock().unwrap();
+
+        let clip = obj.clip.as_ref().unwrap();
+        src.ges_layer.remove_clip(clip).unwrap();
+        dst.ges_layer.add_clip(clip).unwrap();
+      }
+      _ => {}
+    }
+  }
+
+  // hidden
+  fn random_name_for_layer() -> String {
+    let start = SystemTime::now();
+    let elapsed = start.duration_since(UNIX_EPOCH).unwrap().as_millis();
+    format!("layer-{}", elapsed).to_string()
   }
 }

@@ -66,9 +66,10 @@ extern "C" {
     void app_free(App::Private*);
     quint64 app_duration_ms_get(const App::Private*);
     Layers::Private* app_layers_get(const App::Private*);
+    void app_layers_set(App::Private*, Layers);
     TimelineObjects::Private* app_objects_get(const App::Private*);
     quint64 app_position_ms_get(const App::Private*);
-    void app_move_timeline_object(const App::Private*, const ushort*, int, quint64, float);
+    void app_move_timeline_object(App::Private*, const ushort*, int, quint64, float);
     void app_pause(App::Private*);
     void app_play(App::Private*);
     void app_seek_to(App::Private*, quint64);
@@ -207,7 +208,6 @@ extern "C" {
 };
 
 extern "C" {
-    void timeline_objects_data_id(const TimelineObjects::Private*, int, QString*, qstring_set);
     void timeline_objects_data_kind(const TimelineObjects::Private*, int, QString*, qstring_set);
     quint64 timeline_objects_data_layer_id(const TimelineObjects::Private*, int);
     quint64 timeline_objects_data_length_ms(const TimelineObjects::Private*, int);
@@ -282,13 +282,6 @@ Qt::ItemFlags TimelineObjects::flags(const QModelIndex &i) const
     return flags;
 }
 
-QString TimelineObjects::id(int row) const
-{
-    QString s;
-    timeline_objects_data_id(m_d, row, &s, set_qstring);
-    return s;
-}
-
 QString TimelineObjects::kind(int row) const
 {
     QString s;
@@ -325,16 +318,14 @@ QVariant TimelineObjects::data(const QModelIndex &index, int role) const
     case 0:
         switch (role) {
         case Qt::UserRole + 0:
-            return QVariant::fromValue(id(index.row()));
-        case Qt::UserRole + 1:
             return QVariant::fromValue(kind(index.row()));
-        case Qt::UserRole + 2:
+        case Qt::UserRole + 1:
             return QVariant::fromValue(layerId(index.row()));
-        case Qt::UserRole + 3:
+        case Qt::UserRole + 2:
             return QVariant::fromValue(lengthMs(index.row()));
-        case Qt::UserRole + 4:
+        case Qt::UserRole + 3:
             return QVariant::fromValue(name(index.row()));
-        case Qt::UserRole + 5:
+        case Qt::UserRole + 4:
             return QVariant::fromValue(startMs(index.row()));
         }
         break;
@@ -355,12 +346,11 @@ int TimelineObjects::role(const char* name) const {
 }
 QHash<int, QByteArray> TimelineObjects::roleNames() const {
     QHash<int, QByteArray> names = QAbstractItemModel::roleNames();
-    names.insert(Qt::UserRole + 0, "id");
-    names.insert(Qt::UserRole + 1, "kind");
-    names.insert(Qt::UserRole + 2, "layerId");
-    names.insert(Qt::UserRole + 3, "lengthMs");
-    names.insert(Qt::UserRole + 4, "name");
-    names.insert(Qt::UserRole + 5, "startMs");
+    names.insert(Qt::UserRole + 0, "kind");
+    names.insert(Qt::UserRole + 1, "layerId");
+    names.insert(Qt::UserRole + 2, "lengthMs");
+    names.insert(Qt::UserRole + 3, "name");
+    names.insert(Qt::UserRole + 4, "startMs");
     return names;
 }
 QVariant TimelineObjects::headerData(int section, Qt::Orientation orientation, int role) const
@@ -520,6 +510,9 @@ Layers* App::layers()
 {
     return m_layers;
 }
+void App::setLayers(Layers v) {
+    app_layers_set(m_d, v);
+}
 const TimelineObjects* App::objects() const
 {
     return m_objects;
@@ -532,7 +525,7 @@ quint64 App::positionMs() const
 {
     return app_position_ms_get(m_d);
 }
-void App::moveTimelineObject(const QString& object_id, quint64 dst_layer_id, float dst_time_ms) const
+void App::moveTimelineObject(const QString& object_id, quint64 dst_layer_id, float dst_time_ms)
 {
     return app_move_timeline_object(m_d, object_id.utf16(), object_id.size(), dst_layer_id, dst_time_ms);
 }

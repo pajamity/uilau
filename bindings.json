@@ -27,10 +27,10 @@
         },
         "moveTimelineObject": {
           "return": "void",
-          "mut": false,
+          "mut": true,
           "arguments": [
             {
-              "name": "object_id",
+              "name": "obj_name",
               "type": "QString"
             }, 
             {
@@ -94,9 +94,6 @@
         
       },
       "itemProperties": {
-        "id": {
-          "type": "QString"
-        },
         "name": {
           "type": "QString"
         },

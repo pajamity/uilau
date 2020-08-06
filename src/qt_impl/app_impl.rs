@@ -26,7 +26,7 @@ pub struct App {
   objects: TimelineObjects,
 
   // GStreamer
-  pub project: Project,
+  pub project: Arc<Mutex<Project>>,
   pub sink: Arc<gst::Element>,
 }
 
@@ -36,11 +36,14 @@ impl AppTrait for App {
 
     let mut s = Self {
       emit,
-      project,
+      project: Arc::new(Mutex::new(project)),
       layers,
       objects,
       sink: Arc::new(sink)
     };
+
+    s.layers.set_project(&s.project);
+    s.objects.set_project(&s.project);
     
     // This constructor is called from `engine.load()` in main_cpp(). But we are going to obtain the address for videoItem later in main_cpp() (set_video_item_pointer())
     // so we wait until the pointer of video_item is passed
@@ -61,19 +64,22 @@ impl AppTrait for App {
   fn objects_mut(&mut self) -> &mut TimelineObjects { &mut self.objects }
 
   fn play(&mut self) {
-    self.project.ges_pipeline
+    let project = &*self.project.lock().unwrap();
+    project.ges_pipeline
       .set_state(gst::State::Playing)
       .expect("could not change the state");
   }
   
   fn pause(&mut self) {
-    self.project.ges_pipeline
+    let project = &*self.project.lock().unwrap();
+    project.ges_pipeline
       .set_state(gst::State::Paused)
       .expect("could not change the state");
   }
 
   fn duration_ms(&self) -> u64 {
-    if let Some(dur) = self.project.ges_pipeline.query_duration::<gst::ClockTime>() {
+    let project = &*self.project.lock().unwrap();
+    if let Some(dur) = project.ges_pipeline.query_duration::<gst::ClockTime>() {
       let ms = dur.mseconds().unwrap();
       return ms;
     }
@@ -81,7 +87,8 @@ impl AppTrait for App {
   }
 
   fn position_ms(&self) -> u64 {
-    if let Some(pos) = self.project.ges_pipeline.query_position::<gst::ClockTime>() {
+    let project = &*self.project.lock().unwrap();
+    if let Some(pos) = project.ges_pipeline.query_position::<gst::ClockTime>() {
       let ms = pos.mseconds().unwrap();
       return ms;
     }
@@ -89,57 +96,66 @@ impl AppTrait for App {
   }
 
   fn seek_to(&mut self, to: u64) {
-    if self.project.ges_pipeline.seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, (to as u64) * gst::MSECOND)
+    let project = &*self.project.lock().unwrap();
+    if project.ges_pipeline.seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, (to as u64) * gst::MSECOND)
       .is_err() {
       eprintln!("Seeking failed");
     }
   }
 
-  fn move_timeline_object(&self, object_id: String, dst_layer_id: u64, dst_time_ms: f32) {
-    let dst_layer_id = dst_layer_id as usize;
-    // fixme: not efficient if we had lots of objects
-    let layers = self.project.layers.clone();
-    let dst_layer = self.project.get_layer(dst_layer_id as usize);
+  fn move_timeline_object(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32) {
+    let project = &mut *self.project.lock().unwrap();
 
-    let layers = &mut *layers.lock().unwrap();
-    for (layer_id, layer) in layers.iter().enumerate() {
-      let layer = &mut *layer.lock().unwrap();
-      let objects = layer.objects.clone();
-      let objects = &*objects.lock().unwrap();
-      for (_, obj) in objects {
-        let objj = obj.clone();
-        let mut obj = &mut *obj.lock().unwrap();
-        if obj.id == object_id {
-          println!("Found obj: {}", obj.id);
+    project.move_object_to_layer(&obj_name, dst_layer_id as usize);
+    let obj = project.get_object_by_name(&obj_name).unwrap();
+    let obj = &mut *obj.lock().unwrap();
+    obj.set_start(gst::USECOND * ((dst_time_ms * 1000.0) as u64));
 
-          // move between layers
-          if layer_id != dst_layer_id {
-            layer.remove_object(&mut obj);
-
-            let d = dst_layer.clone();
-            obj.set_layer(d);
-            let dst_layer = &mut *dst_layer.lock().unwrap();
-            dst_layer.add_object(objj);
-          }
-
-          // move inside layers
-          obj.set_start((dst_time_ms * 1000.0) as u64 * gst::USECOND);
-        }
-      }
-    }
+    //
+    // let dst_layer_id = dst_layer_id as usize;
+    // // fixme: not efficient if we had lots of objects
+    // let layers = project.layers.clone();
+    // let dst_layer = project.get_layer(dst_layer_id as usize);
+    //
+    // let layers = &mut *layers.lock().unwrap();
+    // for (layer_id, layer) in layers.iter().enumerate() {
+    //   let layer = &mut *layer.lock().unwrap();
+    //   let objects = layer.objects().clone();
+    //   for (_, obj) in objects {
+    //     let objj = obj.clone();
+    //     let mut obj = &mut *obj.lock().unwrap();
+    //     if obj.id == object_id {
+    //       println!("Found obj: {}", obj.id);
+    //
+    //       // move between layers
+    //       if layer_id != dst_layer_id {
+    //         layer.remove_object(&mut obj);
+    //
+    //         let dst_idx = project.find_layer_idx(&dst_layer).unwrap();
+    //         project.add_object_to_layer(&obj, dst_idx);
+    //       }
+    //
+    //       // move inside layers
+    //       obj.set_start(((dst_time_ms * 1000.0) as u64) * gst::USECOND);
+    //     }
+    //   }
+    // }
   }
 
   fn timeline_add_file_object(&mut self, file_urls: String, dst_layer_id: u64, dst_time_ms: f32) {
+    let project = &mut *self.project.lock().unwrap();
+
     println!("ff {}", file_urls);
     for url in file_urls.split("::::") {
       println!("Opening {}", url);
 
       let clip = ges::UriClip::new(&url).expect("Could not create clip");
-      let layer_ = self.project.get_layer(dst_layer_id as usize);
-      let mut obj = Object::new_from_uri_clip("v9", "piyo", (dst_time_ms * 1000.0) as u64 * gst::USECOND, clip);
+      let layer_ = project.get_layer(dst_layer_id as usize);
+      let mut obj = Object::new_from_uri_clip( "piyo", (dst_time_ms * 1000.0) as u64 * gst::USECOND, clip);
+      obj.set_layer(&layer_);
+      let obj = Arc::new(Mutex::new(obj));
       let layer = &mut *layer_.lock().unwrap();
-      obj.set_layer(layer_.clone());
-      layer.add_object(Arc::new(Mutex::new(obj)));
+      project.add_object_to_layer(&obj, dst_layer_id as usize);
     }
   }
 }
@@ -152,7 +168,6 @@ impl App {
 
     let sink = gst::ElementFactory::make("qmlglsink", None).unwrap();
     let sinkbin = gst::ElementFactory::make("glsinkbin", None).unwrap();  
-
 
     proj.ges_pipeline.preview_set_video_sink(&sinkbin);
 
@@ -175,15 +190,17 @@ impl App {
   fn setup_sample_project() -> Project {
     let mut proj = Project::new();
     let layer_ = proj.add_layer();
-    let layer = &mut *layer_.lock().unwrap();
-  
+
+    let layer_idx = proj.find_layer_idx(&layer_).unwrap();
+
     let clip = Self::create_sample_clip();
-    let mut obj = Object::new_from_uri_clip("v1", "bigbunny", 10 * gst::SECOND, clip);
-    obj.set_layer(layer_.clone());
-    layer.add_object(Arc::new(Mutex::new(obj)));
-  
+    let obj = Object::new_from_uri_clip("bigbunny", 10 * gst::SECOND, clip);
+    let obj = Arc::new(Mutex::new(obj));
+    proj.add_object_to_layer(&obj, layer_idx);
+    println!("yahho 1");
+
     proj.add_layer();
-  
+
     // let effect = ges::Effect::new("agingtv").expect("Failed to create effect");
     // clip.add(&effect).unwrap();
   

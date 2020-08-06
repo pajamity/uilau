@@ -387,45 +387,55 @@ ApplicationWindow {
             
           }
 
+          ListView {
+            anchors.fill: parent
+            model: app.objects
+            delegate: timelineObject
+          }
+
           // TimelineObject
-          Rectangle {
-            id: timelineObject1
-            y: 2 * timeline.layerHeight
-            x: 100
-            height: timeline.layerHeight
-            width: 300
-            gradient: Gradient {
-              GradientStop { position: 0.0; color: "blue" }
-              GradientStop { position: 1.0; color: "darkblue" }
-            }
+          Component {
+            id: timelineObject
+            Rectangle {
+              id: timelineObject1
+              y: 2 * timeline.layerHeight
+              x: 100
+              height: timeline.layerHeight
+              width: 300
+              gradient: Gradient {
+                GradientStop { position: 0.0; color: "blue" }
+                GradientStop { position: 1.0; color: "darkblue" }
+              }
 
-            property int objectId: 0
+              property int objectId: 0
 
-            Text {
-              color: "white"
-              text: "Sample Object"
-            }
+              Text {
+                color: "white"
+                text: "Sample Object"
+              }
 
-            Drag.keys: [timeline.objectKey]
-            Drag.active: objectMouseArea.drag.active
-            Drag.supportedActions: Qt.MoveAction
-            Drag.hotSpot.x: 10
-            Drag.hotSpot.y: 10
-            states: State {
-              when: objectMouseArea.drag.active
-              // AnchorChanges {
-              //   target: timelineObject1
-              // }
-            }
+              Drag.keys: [timeline.objectKey]
+              Drag.active: objectMouseArea.drag.active
+              Drag.supportedActions: Qt.MoveAction
+              Drag.hotSpot.x: 10
+              Drag.hotSpot.y: 10
+              states: State {
+                when: objectMouseArea.drag.active
+                // AnchorChanges {
+                //   target: timelineObject1
+                // }
+              }
 
-            MouseArea {
-              id: objectMouseArea
-              anchors.fill: parent
-              drag.target: parent
+              MouseArea {
+                id: objectMouseArea
+                anchors.fill: parent
+                drag.target: parent
 
-              onReleased: parent.Drag.drop()
+                onReleased: parent.Drag.drop()
+              }
             }
           }
+
         }
       }
     }
