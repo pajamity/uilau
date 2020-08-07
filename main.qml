@@ -126,6 +126,7 @@ ApplicationWindow {
       value: app.positionMs
 
       onMoved: {
+        console.log("moved")
         app.seekTo(this.value)
       }
     }

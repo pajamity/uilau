@@ -10,6 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::object::{ObjectKind, Object};
 use super::layer::Layer;
+use crate::util;
 
 #[derive(Clone)]
 pub struct Project {
@@ -36,7 +37,8 @@ impl Project {
   }
 
   pub fn add_layer(&mut self) -> Arc<Mutex<Layer>> {
-    let name = Project::random_name_for_layer();
+    let name = util::random_name_for_layer();
+
     let ges_layer = self.ges_timeline.append_layer();
     let layer = Arc::new(Mutex::new(Layer::new(&name, ges_layer)));
     let layers = &mut *self.layers.lock().unwrap();
@@ -153,8 +155,6 @@ impl Project {
     let dst_layer = self.get_layer(layer_idx);
     obj.set_layer(&dst_layer);
 
-
-
     match obj.kind {
       ObjectKind::Clip => {
         let dst = &*dst_layer.lock().unwrap();
@@ -162,16 +162,8 @@ impl Project {
         let clip = obj.clip.as_ref().unwrap();
         src.ges_layer.remove_clip(clip).unwrap();
         dst.ges_layer.add_clip(clip).unwrap();
-
       }
       _ => {}
     }
-  }
-
-  // hidden
-  fn random_name_for_layer() -> String {
-    let start = SystemTime::now();
-    let elapsed = start.duration_since(UNIX_EPOCH).unwrap().as_millis();
-    format!("layer-{}", elapsed).to_string()
   }
 }

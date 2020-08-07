@@ -12,8 +12,8 @@ use crate::project::*;
 use crate::object::{Object, ObjectKind};
 
 pub struct TimelineObjects {
-  emit: TimelineObjectsEmitter,
-  model: TimelineObjectsList,
+  pub emit: TimelineObjectsEmitter,
+  pub model: TimelineObjectsList,
 
   pub objects: Option<Arc<Mutex<Vec<Arc<Mutex<Object>>>>>>,
   pub project: Option<Weak<Mutex<Project>>>,

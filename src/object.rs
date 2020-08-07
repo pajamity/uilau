@@ -75,10 +75,11 @@ impl Object {
   pub fn set_start(&mut self, val: gst::ClockTime) {
     println!("moving object to {}", val);
     let mut start = *self.start.lock().unwrap();
-    println!("got lock for start");
+    println!("prev: {}", start);
     start = val;
 
     if let Some(clip) = &self.clip {
+      println!("set start for clip");
       clip.set_start(val);
     }
   }

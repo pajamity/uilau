@@ -12,8 +12,8 @@ use crate::project::*;
 use crate::layer::Layer;
 
 pub struct Layers {
-  emit: LayersEmitter,
-  model: LayersList,
+  pub emit: LayersEmitter,
+  pub model: LayersList,
   
   layers: Option<Arc<Mutex<Vec<Arc<Mutex<Layer>>>>>>,
   project: Option<Weak<Mutex<Project>>>,

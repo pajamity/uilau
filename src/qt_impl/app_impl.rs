@@ -10,6 +10,7 @@ use crate::interface::*;
 use crate::ffi::*;
 use crate::project::*;
 use crate::object::{Object, ObjectKind};
+use crate::util;
 
 use super::*;
 
@@ -87,6 +88,7 @@ impl AppTrait for App {
     let project = &*self.project.lock().unwrap();
     if let Some(dur) = project.ges_pipeline.query_duration::<gst::ClockTime>() {
       let ms = dur.mseconds().unwrap();
+      println!("dur {} vs {}", ms, project.ges_timeline.get_duration().mseconds().unwrap());
       return ms;
     }
     0
@@ -96,16 +98,19 @@ impl AppTrait for App {
     let project = &*self.project.lock().unwrap();
     if let Some(pos) = project.ges_pipeline.query_position::<gst::ClockTime>() {
       let ms = pos.mseconds().unwrap();
+      println!("pos {}", ms);
       return ms;
     }
     0
   }
 
   fn seek_to(&mut self, to: u64) {
+    println!("called");
     let project = &*self.project.lock().unwrap();
-    if project.ges_pipeline.seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, (to as u64) * gst::MSECOND)
+    println!("kalled {}", to);
+    if project.ges_pipeline.seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, gst::MSECOND * (to as u64))
       .is_err() {
-      eprintln!("Seeking failed");
+      println!("Seeking failed");
     }
   }
 
@@ -116,6 +121,10 @@ impl AppTrait for App {
     let obj = project.get_object_by_name(&obj_name).unwrap();
     let obj = &mut *obj.lock().unwrap();
     obj.set_start(gst::USECOND * ((dst_time_ms * 1000.0) as u64));
+
+    println!("commit...");
+    project.ges_timeline.commit_sync();
+    println!("commit..!");
 
     //
     // let dst_layer_id = dst_layer_id as usize;
@@ -151,17 +160,23 @@ impl AppTrait for App {
   fn timeline_add_file_object(&mut self, file_urls: String, dst_layer_id: u64, dst_time_ms: f32) {
     let project = &mut *self.project.lock().unwrap();
 
+    let len = {
+      let objects = &*project.objects.lock().unwrap();
+      objects.len()
+    };
+
     println!("ff {}", file_urls);
     for url in file_urls.split("::::") {
       println!("Opening {}", url);
 
+      &self.objects.model.begin_insert_rows(len, len); // Notify Qt
+
       let clip = ges::UriClip::new(&url).expect("Could not create clip");
-      let layer_ = project.get_layer(dst_layer_id as usize);
-      let mut obj = Object::new_from_uri_clip( "piyo", (dst_time_ms * 1000.0) as u64 * gst::USECOND, clip);
-      obj.set_layer(&layer_);
+      let mut obj = Object::new_from_uri_clip( &util::random_name_for_layer(), gst::USECOND * (dst_time_ms * 1000.0) as u64 , clip);
       let obj = Arc::new(Mutex::new(obj));
-      let layer = &mut *layer_.lock().unwrap();
       project.add_object_to_layer(&obj, dst_layer_id as usize);
+
+      &self.objects.model.end_insert_rows();
     }
   }
 }
@@ -203,7 +218,6 @@ impl App {
     let obj = Object::new_from_uri_clip("bigbunny", 10 * gst::SECOND, clip);
     let obj = Arc::new(Mutex::new(obj));
     proj.add_object_to_layer(&obj, layer_idx);
-    println!("yahho 1");
 
     proj.add_layer();
 

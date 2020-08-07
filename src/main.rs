@@ -10,6 +10,7 @@ mod ffi;
 mod project;
 mod object;
 mod layer;
+mod util;
 
 use glib::translate::{ToGlib, FromGlib};
 use gst::prelude::*;
