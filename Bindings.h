@@ -20,7 +20,7 @@ private:
     Private * m_d;
     bool m_ownsPrivate;
     Q_PROPERTY(quint64 durationMs READ durationMs NOTIFY durationMsChanged FINAL)
-    Q_PROPERTY(Layers* layers READ layers WRITE setLayers NOTIFY layersChanged FINAL)
+    Q_PROPERTY(Layers* layers READ layers NOTIFY layersChanged FINAL)
     Q_PROPERTY(TimelineObjects* objects READ objects NOTIFY objectsChanged FINAL)
     Q_PROPERTY(quint64 positionMs READ positionMs NOTIFY positionMsChanged FINAL)
     explicit App(bool owned, QObject *parent);
@@ -33,11 +33,12 @@ public:
     const TimelineObjects* objects() const;
     TimelineObjects* objects();
     quint64 positionMs() const;
-    Q_INVOKABLE void moveTimelineObject(const QString& object_id, quint64 dst_layer_id, float dst_time_ms);
+    Q_INVOKABLE void moveTimelineObject(const QString& obj_name, quint64 dst_layer_id, float dst_time_ms);
     Q_INVOKABLE void pause();
     Q_INVOKABLE void play();
     Q_INVOKABLE void seekTo(quint64 to);
     Q_INVOKABLE void timelineAddFileObject(const QString& file_urls, quint64 dst_layer_id, float dst_time_ms);
+    Q_INVOKABLE void timelineRemoveObject(const QString& obj_name);
 Q_SIGNALS:
     void durationMsChanged();
     void layersChanged();

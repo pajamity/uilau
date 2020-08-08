@@ -122,9 +122,8 @@ impl AppTrait for App {
     let obj = &mut *obj.lock().unwrap();
     obj.set_start(gst::USECOND * ((dst_time_ms * 1000.0) as u64));
 
-    println!("commit...");
+    // todo: commitで時々フリーズする(大きな動画？)
     project.ges_timeline.commit_sync();
-    println!("commit..!");
 
     //
     // let dst_layer_id = dst_layer_id as usize;
@@ -165,7 +164,6 @@ impl AppTrait for App {
       objects.len()
     };
 
-    println!("ff {}", file_urls);
     for url in file_urls.split("::::") {
       println!("Opening {}", url);
 
@@ -178,6 +176,18 @@ impl AppTrait for App {
 
       &self.objects.model.end_insert_rows();
     }
+  }
+
+  fn timeline_remove_object(&mut self, obj_name: String) {
+    let project = &mut *self.project.lock().unwrap();
+    let obj = project.get_object_by_name(&obj_name).unwrap();
+    let idx = project.find_object_index(&obj).unwrap();
+
+    &self.objects.model.begin_remove_rows(idx, idx);
+    project.remove_object_by_name(&obj_name);
+    &self.objects.model.end_remove_rows();
+
+    project.ges_timeline.commit_sync();
   }
 }
 

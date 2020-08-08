@@ -60,6 +60,16 @@
               "type": "float"
             }
           ]
+        },
+        "timelineRemoveObject": {
+          "return": "void",
+          "mut": true,
+          "arguments": [
+            {
+              "name": "obj_name",
+              "type": "QString"
+            }
+          ]
         }
       },
       "properties": {

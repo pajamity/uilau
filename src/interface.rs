@@ -142,11 +142,12 @@ pub trait AppTrait {
     fn objects(&self) -> &TimelineObjects;
     fn objects_mut(&mut self) -> &mut TimelineObjects;
     fn position_ms(&self) -> u64;
-    fn move_timeline_object(&mut self, object_id: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
+    fn move_timeline_object(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
     fn pause(&mut self) -> ();
     fn play(&mut self) -> ();
     fn seek_to(&mut self, to: u64) -> ();
     fn timeline_add_file_object(&mut self, file_urls: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
+    fn timeline_remove_object(&mut self, obj_name: String) -> ();
 }
 
 #[no_mangle]
@@ -256,11 +257,11 @@ pub unsafe extern "C" fn app_position_ms_get(ptr: *const App) -> u64 {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn app_move_timeline_object(ptr: *mut App, object_id_str: *const c_ushort, object_id_len: c_int, dst_layer_id: u64, dst_time_ms: f32) {
-    let mut object_id = String::new();
-    set_string_from_utf16(&mut object_id, object_id_str, object_id_len);
+pub unsafe extern "C" fn app_move_timeline_object(ptr: *mut App, obj_name_str: *const c_ushort, obj_name_len: c_int, dst_layer_id: u64, dst_time_ms: f32) {
+    let mut obj_name = String::new();
+    set_string_from_utf16(&mut obj_name, obj_name_str, obj_name_len);
     let o = &mut *ptr;
-    o.move_timeline_object(object_id, dst_layer_id, dst_time_ms)
+    o.move_timeline_object(obj_name, dst_layer_id, dst_time_ms)
 }
 
 #[no_mangle]
@@ -287,6 +288,14 @@ pub unsafe extern "C" fn app_timeline_add_file_object(ptr: *mut App, file_urls_s
     set_string_from_utf16(&mut file_urls, file_urls_str, file_urls_len);
     let o = &mut *ptr;
     o.timeline_add_file_object(file_urls, dst_layer_id, dst_time_ms)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_timeline_remove_object(ptr: *mut App, obj_name_str: *const c_ushort, obj_name_len: c_int) {
+    let mut obj_name = String::new();
+    set_string_from_utf16(&mut obj_name, obj_name_str, obj_name_len);
+    let o = &mut *ptr;
+    o.timeline_remove_object(obj_name)
 }
 
 pub struct LayersQObject {}

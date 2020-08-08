@@ -66,7 +66,6 @@ extern "C" {
     void app_free(App::Private*);
     quint64 app_duration_ms_get(const App::Private*);
     Layers::Private* app_layers_get(const App::Private*);
-    void app_layers_set(App::Private*, Layers);
     TimelineObjects::Private* app_objects_get(const App::Private*);
     quint64 app_position_ms_get(const App::Private*);
     void app_move_timeline_object(App::Private*, const ushort*, int, quint64, float);
@@ -74,6 +73,7 @@ extern "C" {
     void app_play(App::Private*);
     void app_seek_to(App::Private*, quint64);
     void app_timeline_add_file_object(App::Private*, const ushort*, int, quint64, float);
+    void app_timeline_remove_object(App::Private*, const ushort*, int);
 };
 
 extern "C" {
@@ -510,9 +510,6 @@ Layers* App::layers()
 {
     return m_layers;
 }
-void App::setLayers(Layers v) {
-    app_layers_set(m_d, v);
-}
 const TimelineObjects* App::objects() const
 {
     return m_objects;
@@ -525,9 +522,9 @@ quint64 App::positionMs() const
 {
     return app_position_ms_get(m_d);
 }
-void App::moveTimelineObject(const QString& object_id, quint64 dst_layer_id, float dst_time_ms)
+void App::moveTimelineObject(const QString& obj_name, quint64 dst_layer_id, float dst_time_ms)
 {
-    return app_move_timeline_object(m_d, object_id.utf16(), object_id.size(), dst_layer_id, dst_time_ms);
+    return app_move_timeline_object(m_d, obj_name.utf16(), obj_name.size(), dst_layer_id, dst_time_ms);
 }
 void App::pause()
 {
@@ -544,6 +541,10 @@ void App::seekTo(quint64 to)
 void App::timelineAddFileObject(const QString& file_urls, quint64 dst_layer_id, float dst_time_ms)
 {
     return app_timeline_add_file_object(m_d, file_urls.utf16(), file_urls.size(), dst_layer_id, dst_time_ms);
+}
+void App::timelineRemoveObject(const QString& obj_name)
+{
+    return app_timeline_remove_object(m_d, obj_name.utf16(), obj_name.size());
 }
 Layers::Layers(bool /*owned*/, QObject *parent):
     QAbstractItemModel(parent),

@@ -89,12 +89,41 @@ impl Project {
       let o = &*o.lock().unwrap();
       let o_name = &*o.name.lock().unwrap();
       object_name != o_name
-    })
+    });
+  }
+
+  pub fn remove_object_by_name(&mut self, name: &str) {
+    let objs = &mut *self.objects.lock().unwrap();
+    println!("looping");
+    objs.retain(|o| {
+      let o = &*o.lock().unwrap();
+      let o_name = &*o.name.lock().unwrap();
+      name != o_name
+    });
   }
 
   pub fn remove_object_by_index(&mut self, idx: usize) {
     let objs = &mut *self.objects.lock().unwrap();
     objs.remove(idx); // todo: using swap_remove? O(n)->O(1)
+  }
+
+  pub fn find_object_index(&self, given: &Arc<Mutex<Object>>) -> Option<usize> {
+    let name = {
+      let given = &*given.lock().unwrap();
+      given.name.clone()
+    };
+
+    let name = &*name.lock().unwrap().clone();
+    let objs = &*self.objects.lock().unwrap();
+    for (i, obj) in objs.iter().enumerate() {
+      let obj = &*obj.lock().unwrap();
+      let obj_name = &*obj.name.lock().unwrap();
+      if obj_name == name {
+        return Some(i)
+      }
+    }
+
+    None
   }
 
   // Layers + Objects

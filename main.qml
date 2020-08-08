@@ -431,8 +431,28 @@ ApplicationWindow {
                 id: objectMouseArea
                 anchors.fill: parent
                 drag.target: parent
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
 
                 onReleased: parent.Drag.drop()
+
+                onClicked: {
+                  console.log("object was clicked" + mouse.button)
+                  if (mouse.button == Qt.RightButton) {
+                    console.log("object was right clicked")
+                    objectContextMenu.popup()
+                    
+                  }
+                }
+
+                Menu {
+                  id: objectContextMenu
+                  Action {
+                    text: qsTr("Delete Object")
+                    onTriggered: {
+                      app.timelineRemoveObject(name)
+                    }
+                  }
+                }
               }
             }
           }
