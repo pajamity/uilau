@@ -7,20 +7,36 @@ build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+#[dependencies]
+#gstreamer = "^0.15.4"
+#glib = "0.9.3"
+#gdk = "0.12.1"
+#gtk = { version = "0.8.1", features = ["v3_22"] }
+#gstreamer-video = "0.15.3"
+#byte-slice-cast = "0.3.5"
+#gstreamer-app = "0.15.4"
+#gstreamer-audio = "0.15.3"
+#gio = "0.8.1"
+#gstreamer-editing-services = "0.15.0"
+#libc = "*"
+#gstreamer-sys = "0.8.1"
+#gobject-sys = "0.9.1"
+
+
 [dependencies]
-gstreamer = "^0.15.4"
-glib = "0.9.3"
-gdk = "0.12.1"
-gtk = { version = "0.8.1", features = ["v3_22"] }
-gstreamer-video = "0.15.3"
-byte-slice-cast = "0.3.5"
-gstreamer-app = "0.15.4"
-gstreamer-audio = "0.15.3"
-gio = "0.8.1"
-gstreamer-editing-services = "0.15.0"
+gstreamer = "0.16.2"
+glib = "*"
+#gdk = "*"
+#gtk = { version = "*", features = ["v3_22"] }
+gstreamer-video = "0.16.0"
+byte-slice-cast = "*"
+gstreamer-app = "0.16.0"
+gstreamer-audio = "0.16.2"
+#gio = "*"
+gstreamer-editing-services = { path = "../../gstreamer-rs/gstreamer-editing-services" } #"0.16.0"
 libc = "*"
-gstreamer-sys = "0.8.1"
-gobject-sys = "0.9.1"
+gstreamer-sys = "*"
+gobject-sys = "*"
 
 [build-dependencies]
 rust_qt_binding_generator = "0.3.5"

@@ -68,6 +68,25 @@ impl Object {
     }
   }
 
+  pub fn new_from_title_clip(name: &str, start: gst::ClockTime, clip: ges::TitleClip) -> Self {
+    let asset = clip.get_asset().unwrap();
+    let length = asset
+      .downcast::<ges::Asset>()
+      .unwrap()
+      .get_duration();
+
+    Self {
+      name: Arc::new(Mutex::new(name.to_string())),
+      kind: ObjectKind::Clip,
+      length: Arc::new(Mutex::new(length)),
+      clip: None, //Some(clip),
+      // todo: add ges::TitleClip
+
+      start: Arc::new(Mutex::new(start)),
+      layer: None
+    }
+  }
+
   pub fn set_layer(&mut self, layer: &Arc<Mutex<Layer>>) {
     self.layer = Some(Arc::downgrade(layer));
   }

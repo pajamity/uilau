@@ -70,6 +70,28 @@
               "type": "QString"
             }
           ]
+        },
+        "timelineConfigureText": {
+          "return": "void",
+          "mut": true,
+          "arguments": [
+            {
+              "name": "obj_name",
+              "type": "QString"
+            }, 
+            {
+              "name": "dst_layer_id",
+              "type": "quint64"
+            },
+            {
+              "name": "dst_time_ms",
+              "type": "float"
+            },
+            {
+              "name": "text",
+              "type": "QString"
+            }
+          ]
         }
       },
       "properties": {

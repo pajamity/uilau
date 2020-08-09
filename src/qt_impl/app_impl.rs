@@ -189,6 +189,32 @@ impl AppTrait for App {
 
     project.ges_timeline.commit_sync();
   }
+
+  fn timeline_configure_text(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32, text: String) {
+    let project = &mut *self.project.lock().unwrap();
+    if obj_name.is_empty() { // New Text object
+      let len = {
+        let objects = &*project.objects.lock().unwrap();
+        objects.len()
+      };
+
+      &self.objects.model.begin_insert_rows(len, len); // Notify Qt
+
+      let el = ges::TitleClip::new().unwrap();
+      // Using deprecated APIs as GESTimelineElement#set_child_property... is yet to be implemented.
+      el.set_text(&text);
+      el.set_xpos(20.0);
+      el.set_ypos(20.0);
+
+      let mut obj = Object::new_from_uri_clip( &util::random_name_for_layer(), gst::USECOND * (dst_time_ms * 1000.0) as u64 , clip);
+      let obj = Arc::new(Mutex::new(obj));
+      project.add_object_to_layer(&obj, dst_layer_id as usize);
+
+      &self.objects.model.end_insert_rows();
+    } else {
+      // todo: if object already exists
+    }
+  }
 }
 
 impl App {

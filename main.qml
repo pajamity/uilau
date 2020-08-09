@@ -348,7 +348,9 @@ ApplicationWindow {
                     }
                     Action {
                       text: qsTr("Text")
-                      // todo: implement
+                      onTriggered: {
+                        timelineConfigureTextDialog.openDialog(layerId, layerMouseArea.lastClickedX)
+                      }
                     }
                     // todo: implement
                   }
@@ -509,5 +511,36 @@ ApplicationWindow {
     //   }
     //   this.open()
     // }
+  }
+
+  Dialog {
+    id: timelineConfigureTextDialog
+    title: "Configure Text Object..."
+    visible: false
+    standardButtons: StandardButton.Save | StandardButton.Cancel
+    
+    property string objectName: ""
+    property int layerId: -1
+    property real x: -1
+
+    // todo: load existing information if objectName is designated
+    // todo: prohibit empty object name
+    // todo: change object name
+
+    TextArea {
+      id: textContentArea
+      placeholderText: qsTr("Enter text here")
+    }
+
+    onAccepted: {
+      app.timelineConfigureText(objectName, layerId, timeline.timeMsForPosition(x), textContentArea.text)
+    }
+
+    function openDialog(objectName, layerId, x) {
+      this.objectName = objectName
+      this.layerId = layerId
+      this.x = x
+      this.open()
+    }
   }
 }
