@@ -14,10 +14,10 @@ use crate::interface::TimelineObjectsEmitter;
 
 #[derive(Clone, Copy)]
 pub enum ObjectKind {
-  Clip, // corresponds to ges::Clip (should be splitted into Video & Audio?)
+  Clip(ges::UriClip), // corresponds to ges::Clip (should be splitted into Video & Audio?)
   Video,
   Audio,
-  Text,
+  Text(ges::TitleClip),
   Shape,
   Filter
 }
@@ -77,7 +77,7 @@ impl Object {
 
     Self {
       name: Arc::new(Mutex::new(name.to_string())),
-      kind: ObjectKind::Clip,
+      kind: ObjectKind::Text,
       length: Arc::new(Mutex::new(length)),
       clip: None, //Some(clip),
       // todo: add ges::TitleClip

@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use crate::interface::*;
 use crate::ffi::*;
 use crate::project::*;
-use crate::object::{Object, ObjectKind};
+use crate::object::{Object, ObjectContent};
 use crate::util;
 
 use super::*;
@@ -198,22 +198,22 @@ impl AppTrait for App {
         objects.len()
       };
 
-      &self.objects.model.begin_insert_rows(len, len); // Notify Qt
+      let clip = ges::TitleClip::new().unwrap();
+      clip.set_child_property("text", &text);
+      clip.set_child_property("x", &20.0_f64);
+      clip.set_child_property("y", &20.0_f64);
 
-      let el = ges::TitleClip::new().unwrap();
-      // Using deprecated APIs as GESTimelineElement#set_child_property... is yet to be implemented.
-      el.set_text(&text);
-      el.set_xpos(20.0);
-      el.set_ypos(20.0);
-
-      let mut obj = Object::new_from_uri_clip( &util::random_name_for_layer(), gst::USECOND * (dst_time_ms * 1000.0) as u64 , clip);
+      let mut obj = Object::new_from_title_clip(&util::random_name_for_layer(), gst::USECOND * (dst_time_ms * 1000.0) as u64, clip);
       let obj = Arc::new(Mutex::new(obj));
-      project.add_object_to_layer(&obj, dst_layer_id as usize);
 
+      &self.objects.model.begin_insert_rows(len, len); // Notify Qt
+      project.add_object_to_layer(&obj, dst_layer_id as usize);
       &self.objects.model.end_insert_rows();
     } else {
       // todo: if object already exists
     }
+
+    project.ges_timeline.commit_sync();
   }
 }
 
