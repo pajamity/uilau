@@ -357,6 +357,9 @@ ApplicationWindow {
                   Action {
                     text: qsTr("Add Filter Object")
                     // todo: implement
+                    onTriggered: {
+                      timelineConfigureFilterDialog.openDialog("", layerId, layerMouseArea.lastClickedX)
+                    }
                   }
 
                   MenuSeparator {}
@@ -534,6 +537,37 @@ ApplicationWindow {
 
     onAccepted: {
       app.timelineConfigureText(objectName, layerId, timeline.timeMsForPosition(x), textContentArea.text)
+    }
+
+    function openDialog(objectName, layerId, x) {
+      this.objectName = objectName
+      this.layerId = layerId
+      this.x = x
+      this.open()
+    }
+  }
+
+  Dialog {
+    id: timelineConfigureFilterDialog
+    title: "Configure Filter Object..."
+    visible: false
+    standardButtons: StandardButton.Save | StandardButton.Cancel
+    
+    property string objectName: ""
+    property int layerId: -1
+    property real x: -1
+
+    // todo: load existing information if objectName is designated
+    // todo: prohibit empty object name
+    // todo: change object name
+
+    // TextArea {
+    //   id: textContentArea
+    //   placeholderText: qsTr("Enter text here")
+    // }
+
+    onAccepted: {
+      app.timelineConfigureFilter(objectName, layerId, timeline.timeMsForPosition(x))
     }
 
     function openDialog(objectName, layerId, x) {

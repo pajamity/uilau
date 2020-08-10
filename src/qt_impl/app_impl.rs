@@ -209,8 +209,11 @@ impl AppTrait for App {
 
       &self.objects.model.begin_insert_rows(len, len); // Notify Qt
       project.add_object_to_layer(&obj, dst_layer_id as usize);
+      &self.objects.model.end_insert_rows();
 
       let obj = &*obj.lock().unwrap();
+      // todo: edit window
+      // 先にLayerに追加してからでないと、ClipはTrackにアクセスできない
       match &obj.content {
         ObjectContent::Text { clip } => {
           clip.set_child_property("text", &text).unwrap();
@@ -230,15 +233,58 @@ impl AppTrait for App {
         }
         _ => panic!("unreachable")
       }
-
-      println!("inserted row, len:{}", len);
-      &self.objects.model.end_insert_rows();
     } else {
       // todo: if object already exists
     }
 
     project.ges_timeline.commit_sync();
   }
+
+  fn timeline_configure_filter(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32) {
+    let project = &mut *self.project.lock().unwrap();
+    if obj_name.is_empty() { // New Text object
+      let len = {
+        let objects = &*project.objects.lock().unwrap();
+        objects.len()
+      };
+
+      let video_desc= "alpha method=green";
+      // let video_desc= "videobalanceoooooo saturation=1.5 hue=+0.5";
+    //   let video_desc= "mixer.sink_0 \
+    // videotestsrc pattern=smpte75 ! alpha method=green ! mixer.sink_1 \
+    // videomixer name=mixer sink_0::zorder=0 sink_1::zorder=1 !";
+      let audio_desc= "";
+   //    let video_desc= " gst-launch-1.0 videotestsrc pattern=snow ! mixer.sink_0 \
+   // videotestsrc pattern=smpte75 ! alpha method=green ! mixer.sink_1 \
+   // videomixer name=mixer sink_0::zorder=0 sink_1::zorder=1 ! \
+   // videoconvert ! autovideosink";
+      let clip = ges::EffectClip::new(video_desc, audio_desc).unwrap();
+
+      let mut obj = Object::new_from_effect_clip(&util::random_name_for_layer(), clip);
+      obj.set_start(gst::USECOND * (dst_time_ms * 1000.0) as u64);
+      let obj = Arc::new(Mutex::new(obj));
+      println!("weaaaaakkk");
+
+      &self.objects.model.begin_insert_rows(len, len); // Notify Qt
+      project.add_object_to_layer(&obj, dst_layer_id as usize);
+      &self.objects.model.end_insert_rows();          println!("weaaaaa");
+
+
+      let obj = &*obj.lock().unwrap();
+      match &obj.content {
+        ObjectContent::Filter { clip } => {
+          clip.set_duration(gst::SECOND * 5);
+        }
+        _ => panic!("unreachable")
+      }
+
+    } else {
+      // todo: if object already exists
+    }
+
+    project.ges_timeline.commit_sync();
+  }
+
 }
 
 impl App {

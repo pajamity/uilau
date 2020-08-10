@@ -65,7 +65,7 @@ impl TimelineObjectsTrait for TimelineObjects {
       ObjectContent::Audio => "audio",
       ObjectContent::Video => "video",
       ObjectContent::Clip{ clip:_ } => "clip",
-      ObjectContent::Filter => "filter",
+      ObjectContent::Filter{ clip:_ } => "filter",
       ObjectContent::Shape => "shape",
       ObjectContent::Text{ clip:_ } => "text"
     }

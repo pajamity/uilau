@@ -168,6 +168,11 @@ impl Project {
       ObjectContent::Text { clip } => {
         l.ges_layer.add_clip(clip).unwrap();
       },
+      ObjectContent::Filter { clip } => {
+        println!("s");
+        l.ges_layer.add_clip(clip).unwrap();
+        println!("3");
+      },
       _ => {}
     }
   }
@@ -193,6 +198,11 @@ impl Project {
         dst.ges_layer.add_clip(clip).unwrap();
       },
       ObjectContent::Text { clip } => {
+        let dst = &*dst_layer.lock().unwrap();
+        src.ges_layer.remove_clip(clip).unwrap();
+        dst.ges_layer.add_clip(clip).unwrap();
+      },
+      ObjectContent::Filter { clip } => {
         let dst = &*dst_layer.lock().unwrap();
         src.ges_layer.remove_clip(clip).unwrap();
         dst.ges_layer.add_clip(clip).unwrap();

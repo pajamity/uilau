@@ -23,7 +23,9 @@ pub enum ObjectContent {
     clip: ges::TitleClip
   },
   Shape,
-  Filter
+  Filter {
+    clip: ges::EffectClip
+  }
 }
 
 #[derive(Clone)]
@@ -82,6 +84,19 @@ impl Object {
     }
   }
 
+  pub fn new_from_effect_clip(name: &str, clip: ges::EffectClip) -> Self {
+    let length = clip.get_duration();
+
+    Self {
+      name: Arc::new(Mutex::new(name.to_string())),
+      content: ObjectContent::Filter { clip },
+      length: Arc::new(Mutex::new(length)),
+
+      start: Arc::new(Mutex::new(gst::MSECOND * 0)),
+      layer: None
+    }
+  }
+
   pub fn set_layer(&mut self, layer: &Arc<Mutex<Layer>>) {
     self.layer = Some(Arc::downgrade(layer));
   }
@@ -96,6 +111,9 @@ impl Object {
         clip.set_start(val);
       },
       ObjectContent::Text { clip } => {
+        clip.set_start(val);
+      },
+      ObjectContent::Filter { clip } => {
         clip.set_start(val);
       },
       _ => {}
