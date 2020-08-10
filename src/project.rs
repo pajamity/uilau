@@ -169,9 +169,7 @@ impl Project {
         l.ges_layer.add_clip(clip).unwrap();
       },
       ObjectContent::Filter { clip } => {
-        println!("s");
         l.ges_layer.add_clip(clip).unwrap();
-        println!("3");
       },
       _ => {}
     }

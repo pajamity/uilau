@@ -227,8 +227,8 @@ impl AppTrait for App {
           clip.set_child_property("color", &(0x9900ffff as u32));
           clip.set_child_property("background-color", &(0x00000000 as u32));
           clip.set_child_property("foreground-color", &(0x00000000 as u32));
-          let aa = clip.get_child_property("text").unwrap();
-          println!("aaa {:?}", aa.get::<String>());
+          // let aa = clip.get_child_property("text").unwrap();
+          // println!("{:?}", aa.get::<String>());
           clip.set_duration((gst::SECOND * 5));
         }
         _ => panic!("unreachable")
@@ -248,32 +248,33 @@ impl AppTrait for App {
         objects.len()
       };
 
-      let video_desc= "alpha method=green";
-      // let video_desc= "videobalanceoooooo saturation=1.5 hue=+0.5";
-    //   let video_desc= "mixer.sink_0 \
-    // videotestsrc pattern=smpte75 ! alpha method=green ! mixer.sink_1 \
-    // videomixer name=mixer sink_0::zorder=0 sink_1::zorder=1 !";
-      let audio_desc= "";
-   //    let video_desc= " gst-launch-1.0 videotestsrc pattern=snow ! mixer.sink_0 \
-   // videotestsrc pattern=smpte75 ! alpha method=green ! mixer.sink_1 \
-   // videomixer name=mixer sink_0::zorder=0 sink_1::zorder=1 ! \
-   // videoconvert ! autovideosink";
+      // let video_desc= "alpha method=green";
+      let video_desc= "agingtv";
+
+      // Designating "" as audio_desc causes an error since the entire description becomes 'bin.( audioconvert ! audioresample ! )' which is invalid
+      // todo: find a way to pass NULL to GStreamer (native lib)
+      let audio_desc= "audioamplify";
+      let audio_desc= "audiopanorama";
       let clip = ges::EffectClip::new(video_desc, audio_desc).unwrap();
+      clip.set_duration(gst::SECOND * 5);
 
       let mut obj = Object::new_from_effect_clip(&util::random_name_for_layer(), clip);
       obj.set_start(gst::USECOND * (dst_time_ms * 1000.0) as u64);
       let obj = Arc::new(Mutex::new(obj));
-      println!("weaaaaakkk");
 
       &self.objects.model.begin_insert_rows(len, len); // Notify Qt
       project.add_object_to_layer(&obj, dst_layer_id as usize);
-      &self.objects.model.end_insert_rows();          println!("weaaaaa");
-
+      &self.objects.model.end_insert_rows();
 
       let obj = &*obj.lock().unwrap();
       match &obj.content {
         ObjectContent::Filter { clip } => {
-          clip.set_duration(gst::SECOND * 5);
+          // todo
+          let effect = ges::Effect::new("agingtv").expect("Failed to create effect");
+          clip.add(&effect).unwrap();
+
+          let effect = ges::Effect::new("audiopanorama").expect("Failed to create effect");
+          clip.add(&effect).unwrap();
         }
         _ => panic!("unreachable")
       }
