@@ -5,6 +5,7 @@ use gst::prelude::*;
 use ges::prelude::*;
 
 use std::sync::{Arc, Mutex};
+use glib::translate::*;
 
 use crate::interface::*;
 use crate::ffi::*;
@@ -170,7 +171,8 @@ impl AppTrait for App {
       &self.objects.model.begin_insert_rows(len, len); // Notify Qt
 
       let clip = ges::UriClip::new(&url).expect("Could not create clip");
-      let mut obj = Object::new_from_uri_clip( &util::random_name_for_layer(), gst::USECOND * (dst_time_ms * 1000.0) as u64 , clip);
+      let mut obj = Object::new_from_uri_clip( &util::random_name_for_layer(), clip);
+      obj.set_start(gst::USECOND * (dst_time_ms * 1000.0) as u64);
       let obj = Arc::new(Mutex::new(obj));
       project.add_object_to_layer(&obj, dst_layer_id as usize);
 
@@ -198,16 +200,38 @@ impl AppTrait for App {
         objects.len()
       };
 
+      // https://gstreamer.freedesktop.org/documentation/gst-editing-services/gesclip.html?gi-language=c#GESClip
       let clip = ges::TitleClip::new().unwrap();
-      clip.set_child_property("text", &text);
-      clip.set_child_property("x", &20.0_f64);
-      clip.set_child_property("y", &20.0_f64);
 
-      let mut obj = Object::new_from_title_clip(&util::random_name_for_layer(), gst::USECOND * (dst_time_ms * 1000.0) as u64, clip);
+      let mut obj = Object::new_from_title_clip(&util::random_name_for_layer(), clip);
+      obj.set_start(gst::USECOND * (dst_time_ms * 1000.0) as u64);
       let obj = Arc::new(Mutex::new(obj));
 
       &self.objects.model.begin_insert_rows(len, len); // Notify Qt
       project.add_object_to_layer(&obj, dst_layer_id as usize);
+
+      let obj = &*obj.lock().unwrap();
+      match &obj.content {
+        ObjectContent::Text { clip } => {
+          clip.set_child_property("text", &text).unwrap();
+          clip.set_child_property("posx", &20).unwrap();
+          clip.set_child_property("posy", &20).unwrap();
+          clip.set_child_property("height", &100).unwrap();
+          clip.set_child_property("width", &100).unwrap();
+          // clip.set_child_property("text-height", &100).unwrap();
+          // clip.set_child_property("text-width", &100).unwrap();
+          clip.set_child_property("font-desc", &"IPAPGothic 50").unwrap();
+          clip.set_child_property("color", &(0x9900ffff as u32));
+          clip.set_child_property("background-color", &(0x00000000 as u32));
+          clip.set_child_property("foreground-color", &(0x00000000 as u32));
+          let aa = clip.get_child_property("text").unwrap();
+          println!("aaa {:?}", aa.get::<String>());
+          clip.set_duration((gst::SECOND * 5));
+        }
+        _ => panic!("unreachable")
+      }
+
+      println!("inserted row, len:{}", len);
       &self.objects.model.end_insert_rows();
     } else {
       // todo: if object already exists
@@ -251,7 +275,8 @@ impl App {
     let layer_idx = proj.find_layer_idx(&layer_).unwrap();
 
     let clip = Self::create_sample_clip();
-    let obj = Object::new_from_uri_clip("bigbunny", 10 * gst::SECOND, clip);
+    let mut obj = Object::new_from_uri_clip("bigbunny", clip);
+    obj.set_start(gst::SECOND * 2);
     let obj = Arc::new(Mutex::new(obj));
     proj.add_object_to_layer(&obj, layer_idx);
 

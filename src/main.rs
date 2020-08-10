@@ -20,7 +20,7 @@ use std::sync::{Arc, Mutex};
 
 use qt_impl::*;
 use interface::*;
-use object::{Object, ObjectKind};
+use object::{Object, ObjectContent};
 use layer::Layer;
 
 // functions in main.cpp

@@ -5,11 +5,10 @@ use gst::prelude::*;
 use ges::prelude::*;
 
 use std::sync::{Arc, Mutex, Weak};
-use std::collections::HashMap;
 
 use crate::interface::*;
 use crate::project::*;
-use crate::object::{Object, ObjectKind};
+use crate::object::{Object, ObjectContent};
 
 pub struct TimelineObjects {
   pub emit: TimelineObjectsEmitter,
@@ -62,13 +61,13 @@ impl TimelineObjectsTrait for TimelineObjects {
   fn kind(&self, index: usize) -> &str {
     let obj = self.get_obj(index).unwrap();
     let obj = &*obj.lock().unwrap();
-    match obj.kind {
-      ObjectKind::Audio => "audio",
-      ObjectKind::Video => "video",
-      ObjectKind::Clip => "clip",
-      ObjectKind::Filter => "filter",
-      ObjectKind::Shape => "shape",
-      ObjectKind::Text => "text"
+    match obj.content {
+      ObjectContent::Audio => "audio",
+      ObjectContent::Video => "video",
+      ObjectContent::Clip{ clip:_ } => "clip",
+      ObjectContent::Filter => "filter",
+      ObjectContent::Shape => "shape",
+      ObjectContent::Text{ clip:_ } => "text"
     }
   }
 

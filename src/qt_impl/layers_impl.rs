@@ -2,7 +2,6 @@ extern crate gstreamer as gst;
 extern crate gstreamer_editing_services as ges;
 
 use gst::prelude::*;
-use ges::prelude::*;
 
 use std::sync::{Arc, Mutex, Weak};
 

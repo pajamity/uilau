@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use super::object::{ObjectKind, Object};
+use super::object::{ObjectContent, Object};
 use super::layer::Layer;
 use crate::util;
 
@@ -161,11 +161,13 @@ impl Project {
     let l = &*layer.lock().unwrap();
 
     obj.set_layer(&layer);
-    match obj.kind {
-      ObjectKind::Clip => {
-        let clip = obj.clip.as_ref().expect("No clip is set");
+    match &obj.content {
+      ObjectContent::Clip { clip } => {
         l.ges_layer.add_clip(clip).unwrap();
-      }
+      },
+      ObjectContent::Text { clip } => {
+        l.ges_layer.add_clip(clip).unwrap();
+      },
       _ => {}
     }
   }
@@ -184,14 +186,17 @@ impl Project {
     let dst_layer = self.get_layer(layer_idx);
     obj.set_layer(&dst_layer);
 
-    match obj.kind {
-      ObjectKind::Clip => {
+    match &obj.content {
+      ObjectContent::Clip { clip } => {
         let dst = &*dst_layer.lock().unwrap();
-
-        let clip = obj.clip.as_ref().unwrap();
         src.ges_layer.remove_clip(clip).unwrap();
         dst.ges_layer.add_clip(clip).unwrap();
-      }
+      },
+      ObjectContent::Text { clip } => {
+        let dst = &*dst_layer.lock().unwrap();
+        src.ges_layer.remove_clip(clip).unwrap();
+        dst.ges_layer.add_clip(clip).unwrap();
+      },
       _ => {}
     }
   }

@@ -6,7 +6,7 @@ use ges::prelude::*;
 use std::collections::HashMap;
 
 use super::project::Project;
-use super::object::{ObjectKind, Object};
+use super::object::{ObjectContent, Object};
 
 use crate::qt_impl::*;
 

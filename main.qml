@@ -349,7 +349,7 @@ ApplicationWindow {
                     Action {
                       text: qsTr("Text")
                       onTriggered: {
-                        timelineConfigureTextDialog.openDialog(layerId, layerMouseArea.lastClickedX)
+                        timelineConfigureTextDialog.openDialog("", layerId, layerMouseArea.lastClickedX)
                       }
                     }
                     // todo: implement

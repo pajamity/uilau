@@ -12,22 +12,25 @@ use crate::project::*;
 
 use crate::interface::TimelineObjectsEmitter;
 
-#[derive(Clone, Copy)]
-pub enum ObjectKind {
-  Clip(ges::UriClip), // corresponds to ges::Clip (should be splitted into Video & Audio?)
+#[derive(Clone)]
+pub enum ObjectContent {
+  Clip {
+    clip: ges::UriClip
+  }, // corresponds to ges::Clip (should be splitted into Video & Audio?)
   Video,
   Audio,
-  Text(ges::TitleClip),
+  Text {
+    clip: ges::TitleClip
+  },
   Shape,
   Filter
 }
 
-// #[derive(Clone)]
+#[derive(Clone)]
 pub struct Object {
   pub name: Arc<Mutex<String>>,
-  pub kind: ObjectKind,
+  pub content: ObjectContent,
   pub length: Arc<Mutex<gst::ClockTime>>,
-  pub clip: Option<ges::UriClip>,
 
   // move to "objectPlacement" ?
   pub start: Arc<Mutex<gst::ClockTime>>,
@@ -36,12 +39,11 @@ pub struct Object {
 }
 
 impl Object {
-  pub fn new(name: &str, kind: ObjectKind, length: gst::ClockTime, start: gst::ClockTime) -> Self {
+  pub fn new(name: &str, content: ObjectContent, length: gst::ClockTime, start: gst::ClockTime) -> Self {
     let s = Self {
       name: Arc::new(Mutex::new(name.to_string())),
-      kind,
+      content,
       length: Arc::new(Mutex::new(length)),
-      clip: None,
 
       start: Arc::new(Mutex::new(start)),
       layer: None,
@@ -50,7 +52,7 @@ impl Object {
     s
   }
 
-  pub fn new_from_uri_clip(name: &str, start: gst::ClockTime, clip: ges::UriClip) -> Self {
+  pub fn new_from_uri_clip(name: &str, clip: ges::UriClip) -> Self {
     let asset = clip.get_asset().unwrap();
     let length = asset
       .downcast::<ges::UriClipAsset>()
@@ -59,30 +61,23 @@ impl Object {
 
     Self {
       name: Arc::new(Mutex::new(name.to_string())),
-      kind: ObjectKind::Clip,
+      content: ObjectContent::Clip { clip },
       length: Arc::new(Mutex::new(length)),
-      clip: Some(clip),
 
-      start: Arc::new(Mutex::new(start)),
+      start: Arc::new(Mutex::new(gst::SECOND * 0)),
       layer: None
     }
   }
 
-  pub fn new_from_title_clip(name: &str, start: gst::ClockTime, clip: ges::TitleClip) -> Self {
-    let asset = clip.get_asset().unwrap();
-    let length = asset
-      .downcast::<ges::Asset>()
-      .unwrap()
-      .get_duration();
+  pub fn new_from_title_clip(name: &str, clip: ges::TitleClip) -> Self {
+    let length = clip.get_duration();
 
     Self {
       name: Arc::new(Mutex::new(name.to_string())),
-      kind: ObjectKind::Text,
+      content: ObjectContent::Text { clip },
       length: Arc::new(Mutex::new(length)),
-      clip: None, //Some(clip),
-      // todo: add ges::TitleClip
 
-      start: Arc::new(Mutex::new(start)),
+      start: Arc::new(Mutex::new(gst::MSECOND * 0)),
       layer: None
     }
   }
@@ -94,12 +89,16 @@ impl Object {
   pub fn set_start(&mut self, val: gst::ClockTime) {
     println!("moving object to {}", val);
     let mut start = *self.start.lock().unwrap();
-    println!("prev: {}", start);
     start = val;
 
-    if let Some(clip) = &self.clip {
-      println!("set start for clip");
-      clip.set_start(val);
+    match &self.content {
+      ObjectContent::Clip { clip} => {
+        clip.set_start(val);
+      },
+      ObjectContent::Text { clip } => {
+        clip.set_start(val);
+      },
+      _ => {}
     }
   }
 }
