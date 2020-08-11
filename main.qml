@@ -421,7 +421,7 @@ ApplicationWindow {
               y: 2 * timeline.layerHeight
               x: startMs / 1000.0 * timeline.pixelPerSecond
               height: timeline.layerHeight
-              width: lengthMs / 1000.0 * timeline.pixelPerSecond
+              width: durationMs / 1000.0 * timeline.pixelPerSecond
               gradient: Gradient {
                 GradientStop { position: 0.0; color: "blue" }
                 GradientStop { position: 1.0; color: "darkblue" }
@@ -432,7 +432,7 @@ ApplicationWindow {
               
               Text {
                 color: "white"
-                text: name + startMs.toString()
+                text: name
               }
 
               Drag.keys: [timeline.objectKey]

@@ -178,7 +178,7 @@
         "kind": {
           "type": "QString"
         },
-        "lengthMs": {
+        "durationMs": {
           "type": "quint64"
         },
         "startMs": {

@@ -205,16 +205,7 @@ impl AppTrait for App {
 
       let mut obj = Object::new_from_title_clip(&util::random_name_for_layer(), clip);
       obj.set_start(gst::USECOND * (dst_time_ms * 1000.0) as u64);
-      obj.set_length(gst::SECOND * 5);
-      {
-        let x = &*obj.length.lock().unwrap();
-        println!("set uu: {}", x);
-      }
-      {
-        let st = &*obj.start.lock().unwrap();
-        println!("set st: {}", st);
-      }
-
+      obj.set_duration(gst::SECOND * 5);
       let obj = Arc::new(Mutex::new(obj));
 
       &self.objects.model.begin_insert_rows(len, len); // Notify Qt
@@ -308,10 +299,10 @@ impl AppTrait for App {
       new_inpoint - start
     };
     let new_len = {
-      let len = &*obj.length.lock().unwrap();
+      let len = &*obj.duration.lock().unwrap();
       len - diff
     };
-    obj.set_length(new_len);
+    obj.set_duration(new_len);
 
     match &obj.content {
       // change inpoint and duration
@@ -342,11 +333,11 @@ impl AppTrait for App {
     let new_outpoint = gst::USECOND * (outpoint_ms * 1000.0) as u64;
     let new_len = {
       let start = &*obj.start.lock().unwrap();
-      let len = &*obj.length.lock().unwrap();
+      let len = &*obj.duration.lock().unwrap();
 
       len + (new_outpoint - start)
     };
-    obj.set_length(new_len);
+    obj.set_duration(new_len);
 
     project.ges_timeline.commit_sync();
   }

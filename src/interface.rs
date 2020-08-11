@@ -604,9 +604,9 @@ pub trait TimelineObjectsTrait {
     }
     fn fetch_more(&mut self) {}
     fn sort(&mut self, _: u8, _: SortOrder) {}
+    fn duration_ms(&self, index: usize) -> u64;
     fn kind(&self, index: usize) -> &str;
     fn layer_id(&self, index: usize) -> u64;
-    fn length_ms(&self, index: usize) -> u64;
     fn name(&self, index: usize) -> &str;
     fn start_ms(&self, index: usize) -> u64;
 }
@@ -684,6 +684,12 @@ pub unsafe extern "C" fn timeline_objects_sort(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn timeline_objects_data_duration_ms(ptr: *const TimelineObjects, row: c_int) -> u64 {
+    let o = &*ptr;
+    o.duration_ms(to_usize(row))
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn timeline_objects_data_kind(
     ptr: *const TimelineObjects, row: c_int,
     d: *mut QString,
@@ -699,12 +705,6 @@ pub unsafe extern "C" fn timeline_objects_data_kind(
 pub unsafe extern "C" fn timeline_objects_data_layer_id(ptr: *const TimelineObjects, row: c_int) -> u64 {
     let o = &*ptr;
     o.layer_id(to_usize(row))
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn timeline_objects_data_length_ms(ptr: *const TimelineObjects, row: c_int) -> u64 {
-    let o = &*ptr;
-    o.length_ms(to_usize(row))
 }
 
 #[no_mangle]

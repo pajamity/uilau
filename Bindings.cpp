@@ -212,9 +212,9 @@ extern "C" {
 };
 
 extern "C" {
+    quint64 timeline_objects_data_duration_ms(const TimelineObjects::Private*, int);
     void timeline_objects_data_kind(const TimelineObjects::Private*, int, QString*, qstring_set);
     quint64 timeline_objects_data_layer_id(const TimelineObjects::Private*, int);
-    quint64 timeline_objects_data_length_ms(const TimelineObjects::Private*, int);
     void timeline_objects_data_name(const TimelineObjects::Private*, int, QString*, qstring_set);
     quint64 timeline_objects_data_start_ms(const TimelineObjects::Private*, int);
     void timeline_objects_sort(TimelineObjects::Private*, unsigned char column, Qt::SortOrder order = Qt::AscendingOrder);
@@ -286,6 +286,11 @@ Qt::ItemFlags TimelineObjects::flags(const QModelIndex &i) const
     return flags;
 }
 
+quint64 TimelineObjects::durationMs(int row) const
+{
+    return timeline_objects_data_duration_ms(m_d, row);
+}
+
 QString TimelineObjects::kind(int row) const
 {
     QString s;
@@ -296,11 +301,6 @@ QString TimelineObjects::kind(int row) const
 quint64 TimelineObjects::layerId(int row) const
 {
     return timeline_objects_data_layer_id(m_d, row);
-}
-
-quint64 TimelineObjects::lengthMs(int row) const
-{
-    return timeline_objects_data_length_ms(m_d, row);
 }
 
 QString TimelineObjects::name(int row) const
@@ -322,11 +322,11 @@ QVariant TimelineObjects::data(const QModelIndex &index, int role) const
     case 0:
         switch (role) {
         case Qt::UserRole + 0:
-            return QVariant::fromValue(kind(index.row()));
+            return QVariant::fromValue(durationMs(index.row()));
         case Qt::UserRole + 1:
-            return QVariant::fromValue(layerId(index.row()));
+            return QVariant::fromValue(kind(index.row()));
         case Qt::UserRole + 2:
-            return QVariant::fromValue(lengthMs(index.row()));
+            return QVariant::fromValue(layerId(index.row()));
         case Qt::UserRole + 3:
             return QVariant::fromValue(name(index.row()));
         case Qt::UserRole + 4:
@@ -350,9 +350,9 @@ int TimelineObjects::role(const char* name) const {
 }
 QHash<int, QByteArray> TimelineObjects::roleNames() const {
     QHash<int, QByteArray> names = QAbstractItemModel::roleNames();
-    names.insert(Qt::UserRole + 0, "kind");
-    names.insert(Qt::UserRole + 1, "layerId");
-    names.insert(Qt::UserRole + 2, "lengthMs");
+    names.insert(Qt::UserRole + 0, "durationMs");
+    names.insert(Qt::UserRole + 1, "kind");
+    names.insert(Qt::UserRole + 2, "layerId");
     names.insert(Qt::UserRole + 3, "name");
     names.insert(Qt::UserRole + 4, "startMs");
     return names;

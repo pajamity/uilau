@@ -121,9 +121,9 @@ public:
     bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role = Qt::EditRole) override;
     Q_INVOKABLE bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
     Q_INVOKABLE bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
+    Q_INVOKABLE quint64 durationMs(int row) const;
     Q_INVOKABLE QString kind(int row) const;
     Q_INVOKABLE quint64 layerId(int row) const;
-    Q_INVOKABLE quint64 lengthMs(int row) const;
     Q_INVOKABLE QString name(int row) const;
     Q_INVOKABLE quint64 startMs(int row) const;
 
