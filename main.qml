@@ -456,11 +456,8 @@ ApplicationWindow {
                 onReleased: parent.Drag.drop()
 
                 onClicked: {
-                  console.log("object was clicked" + mouse.button)
                   if (mouse.button == Qt.RightButton) {
-                    console.log("object was right clicked")
                     objectContextMenu.popup()
-                    
                   }
                 }
 
@@ -470,6 +467,12 @@ ApplicationWindow {
                     text: qsTr("Delete Object")
                     onTriggered: {
                       app.timelineRemoveObject(name)
+                    }
+                  }
+                  Action {
+                    text: qsTr("Apply Filter to Object...")
+                    onTriggered: {
+                      timelineApplyObjectFilterDialog.openDialog(name)
                     }
                   }
                 }
@@ -589,6 +592,34 @@ ApplicationWindow {
       this.objectName = objectName
       this.layerId = layerId
       this.x = x
+      this.open()
+    }
+  }
+
+  Dialog {
+    id: timelineApplyObjectFilterDialog
+    title: qsTr("Apply a Filter to Object")
+    visible: false
+
+    standardButtons: StandardButton.Save | StandardButton.Cancel
+    
+    property string objectName: ""
+
+    // todo: load existing information if objectName is designated
+    // todo: prohibit empty object name
+    // todo: change object name
+
+    // TextArea {
+    //   id: textContentArea
+    //   placeholderText: qsTr("Enter text here")
+    // }
+
+    onAccepted: {
+      app.timelineApplyObjectFilter(objectName, "agingtv")
+    }
+
+    function openDialog(objectName) {
+      this.objectName = objectName
       this.open()
     }
   }

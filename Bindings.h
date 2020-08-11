@@ -38,6 +38,7 @@ public:
     Q_INVOKABLE void play();
     Q_INVOKABLE void seekTo(quint64 to);
     Q_INVOKABLE void timelineAddFileObject(const QString& file_urls, quint64 dst_layer_id, float dst_time_ms);
+    Q_INVOKABLE void timelineApplyObjectFilter(const QString& obj_name, const QString& description);
     Q_INVOKABLE void timelineChangeObjectInpoint(const QString& obj_name, float inpoint_ms);
     Q_INVOKABLE void timelineChangeObjectOutpoint(const QString& obj_name, float outpoint_ms);
     Q_INVOKABLE void timelineConfigureFilter(const QString& obj_name, quint64 dst_layer_id, float dst_time_ms);

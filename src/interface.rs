@@ -147,6 +147,7 @@ pub trait AppTrait {
     fn play(&mut self) -> ();
     fn seek_to(&mut self, to: u64) -> ();
     fn timeline_add_file_object(&mut self, file_urls: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
+    fn timeline_apply_object_filter(&mut self, obj_name: String, description: String) -> ();
     fn timeline_change_object_inpoint(&mut self, obj_name: String, inpoint_ms: f32) -> ();
     fn timeline_change_object_outpoint(&mut self, obj_name: String, outpoint_ms: f32) -> ();
     fn timeline_configure_filter(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
@@ -292,6 +293,16 @@ pub unsafe extern "C" fn app_timeline_add_file_object(ptr: *mut App, file_urls_s
     set_string_from_utf16(&mut file_urls, file_urls_str, file_urls_len);
     let o = &mut *ptr;
     o.timeline_add_file_object(file_urls, dst_layer_id, dst_time_ms)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_timeline_apply_object_filter(ptr: *mut App, obj_name_str: *const c_ushort, obj_name_len: c_int, description_str: *const c_ushort, description_len: c_int) {
+    let mut obj_name = String::new();
+    set_string_from_utf16(&mut obj_name, obj_name_str, obj_name_len);
+    let mut description = String::new();
+    set_string_from_utf16(&mut description, description_str, description_len);
+    let o = &mut *ptr;
+    o.timeline_apply_object_filter(obj_name, description)
 }
 
 #[no_mangle]

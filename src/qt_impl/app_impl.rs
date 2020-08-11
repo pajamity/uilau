@@ -342,7 +342,28 @@ impl AppTrait for App {
     project.ges_timeline.commit_sync();
   }
 
+  fn timeline_apply_object_filter(&mut self, obj_name: String, description: String) {
+    let project = &mut *self.project.lock().unwrap();
+    let obj = project.get_object_by_name(&obj_name).unwrap();
+    let obj = &*obj.lock().unwrap();
 
+    let effect = ges::Effect::new(&description).unwrap();
+
+    match &obj.content {
+      ObjectContent::Clip { clip } => {
+        clip.add(&effect).unwrap();
+      },
+      ObjectContent::Filter { clip } => {
+        clip.add(&effect).unwrap();
+      },
+      ObjectContent::Text { clip } => {
+        clip.add(&effect).unwrap();
+      },
+      _ => panic!("unimplemented")
+    }
+
+    project.ges_timeline.commit_sync();
+  }
 }
 
 impl App {

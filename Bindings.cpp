@@ -73,6 +73,7 @@ extern "C" {
     void app_play(App::Private*);
     void app_seek_to(App::Private*, quint64);
     void app_timeline_add_file_object(App::Private*, const ushort*, int, quint64, float);
+    void app_timeline_apply_object_filter(App::Private*, const ushort*, int, const ushort*, int);
     void app_timeline_change_object_inpoint(App::Private*, const ushort*, int, float);
     void app_timeline_change_object_outpoint(App::Private*, const ushort*, int, float);
     void app_timeline_configure_filter(App::Private*, const ushort*, int, quint64, float);
@@ -545,6 +546,10 @@ void App::seekTo(quint64 to)
 void App::timelineAddFileObject(const QString& file_urls, quint64 dst_layer_id, float dst_time_ms)
 {
     return app_timeline_add_file_object(m_d, file_urls.utf16(), file_urls.size(), dst_layer_id, dst_time_ms);
+}
+void App::timelineApplyObjectFilter(const QString& obj_name, const QString& description)
+{
+    return app_timeline_apply_object_filter(m_d, obj_name.utf16(), obj_name.size(), description.utf16(), description.size());
 }
 void App::timelineChangeObjectInpoint(const QString& obj_name, float inpoint_ms)
 {

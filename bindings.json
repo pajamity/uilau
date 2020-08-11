@@ -138,6 +138,20 @@
               "type": "float"
             }
           ]
+        },
+        "timelineApplyObjectFilter": {
+          "return": "void",
+          "mut": true,
+          "arguments": [
+            {
+              "name": "obj_name",
+              "type": "QString"
+            },
+            {
+              "name": "description",
+              "type": "QString"
+            }
+          ]
         }
       },
       "properties": {
