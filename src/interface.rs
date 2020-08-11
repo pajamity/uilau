@@ -147,6 +147,8 @@ pub trait AppTrait {
     fn play(&mut self) -> ();
     fn seek_to(&mut self, to: u64) -> ();
     fn timeline_add_file_object(&mut self, file_urls: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
+    fn timeline_change_object_inpoint(&mut self, obj_name: String, inpoint_ms: f32) -> ();
+    fn timeline_change_object_outpoint(&mut self, obj_name: String, outpoint_ms: f32) -> ();
     fn timeline_configure_filter(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
     fn timeline_configure_text(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32, text: String) -> ();
     fn timeline_remove_object(&mut self, obj_name: String) -> ();
@@ -290,6 +292,22 @@ pub unsafe extern "C" fn app_timeline_add_file_object(ptr: *mut App, file_urls_s
     set_string_from_utf16(&mut file_urls, file_urls_str, file_urls_len);
     let o = &mut *ptr;
     o.timeline_add_file_object(file_urls, dst_layer_id, dst_time_ms)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_timeline_change_object_inpoint(ptr: *mut App, obj_name_str: *const c_ushort, obj_name_len: c_int, inpoint_ms: f32) {
+    let mut obj_name = String::new();
+    set_string_from_utf16(&mut obj_name, obj_name_str, obj_name_len);
+    let o = &mut *ptr;
+    o.timeline_change_object_inpoint(obj_name, inpoint_ms)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_timeline_change_object_outpoint(ptr: *mut App, obj_name_str: *const c_ushort, obj_name_len: c_int, outpoint_ms: f32) {
+    let mut obj_name = String::new();
+    set_string_from_utf16(&mut obj_name, obj_name_str, obj_name_len);
+    let o = &mut *ptr;
+    o.timeline_change_object_outpoint(obj_name, outpoint_ms)
 }
 
 #[no_mangle]

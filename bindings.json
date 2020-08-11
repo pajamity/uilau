@@ -71,6 +71,34 @@
             }
           ]
         },
+        "timelineChangeObjectOutpoint": {
+          "return": "void",
+          "mut": true,
+          "arguments": [
+            {
+              "name": "obj_name",
+              "type": "QString"
+            },
+            {
+              "name": "outpoint_ms",
+              "type": "float"
+            }
+          ]
+        },
+        "timelineChangeObjectInpoint": {
+          "return": "void",
+          "mut": true,
+          "arguments": [
+            {
+              "name": "obj_name",
+              "type": "QString"
+            },
+            {
+              "name": "inpoint_ms",
+              "type": "float"
+            }
+          ]
+        },
         "timelineConfigureText": {
           "return": "void",
           "mut": true,

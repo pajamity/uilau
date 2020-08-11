@@ -102,9 +102,7 @@ impl Object {
   }
 
   pub fn set_start(&mut self, val: gst::ClockTime) {
-    println!("moving object to {}", val);
-    let mut start = *self.start.lock().unwrap();
-    start = val;
+    *self.start.lock().unwrap() = val;
 
     match &self.content {
       ObjectContent::Clip { clip} => {
@@ -115,6 +113,23 @@ impl Object {
       },
       ObjectContent::Filter { clip } => {
         clip.set_start(val);
+      },
+      _ => {}
+    }
+  }
+
+  pub fn set_length(&mut self, val: gst::ClockTime) {
+    *self.length.lock().unwrap() = val;
+
+    match &self.content {
+      ObjectContent::Clip { clip} => {
+        clip.set_duration(val);
+      },
+      ObjectContent::Text { clip } => {
+        clip.set_duration(val);
+      },
+      ObjectContent::Filter { clip } => {
+        clip.set_duration(val);
       },
       _ => {}
     }

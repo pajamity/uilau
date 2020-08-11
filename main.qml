@@ -186,6 +186,10 @@ ApplicationWindow {
       return x / pixelPerSecond * 1000.0
     }
 
+    function timecodeForMs(t) {
+      return t / 1000.0 // todo
+    }
+
     GridLayout { // todo: vs. GridLayout?
       id: grid
       columns: 2
@@ -230,6 +234,16 @@ ApplicationWindow {
               width: 1
               height: parent.height - (index % 5 == 0 ? 15 : 25)
               color: "gray"
+            }
+          }
+
+          Repeater {
+            model: 20
+
+            Text {
+              text: timeline.timecodeForMs(5 * index * 1000.0)
+              x: timeline.pixelPerSecond * 5 * index + 2
+              y: 0 
             }
           }
 
@@ -405,19 +419,20 @@ ApplicationWindow {
             Rectangle {
               id: timelineObject1
               y: 2 * timeline.layerHeight
-              x: 100
+              x: startMs / 1000.0 * timeline.pixelPerSecond
               height: timeline.layerHeight
-              width: 300
+              width: lengthMs / 1000.0 * timeline.pixelPerSecond
               gradient: Gradient {
                 GradientStop { position: 0.0; color: "blue" }
                 GradientStop { position: 1.0; color: "darkblue" }
               }
 
-              property string objectName: name
-
+              // objectName in QML is not related to TimelineObject
+              property string objectName: name 
+              
               Text {
                 color: "white"
-                text: name
+                text: name + startMs.toString()
               }
 
               Drag.keys: [timeline.objectKey]

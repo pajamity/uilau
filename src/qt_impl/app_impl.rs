@@ -205,13 +205,23 @@ impl AppTrait for App {
 
       let mut obj = Object::new_from_title_clip(&util::random_name_for_layer(), clip);
       obj.set_start(gst::USECOND * (dst_time_ms * 1000.0) as u64);
+      obj.set_length(gst::SECOND * 5);
+      {
+        let x = &*obj.length.lock().unwrap();
+        println!("set uu: {}", x);
+      }
+      {
+        let st = &*obj.start.lock().unwrap();
+        println!("set st: {}", st);
+      }
+
       let obj = Arc::new(Mutex::new(obj));
 
       &self.objects.model.begin_insert_rows(len, len); // Notify Qt
       project.add_object_to_layer(&obj, dst_layer_id as usize);
       &self.objects.model.end_insert_rows();
 
-      let obj = &*obj.lock().unwrap();
+      let obj = &mut *obj.lock().unwrap();
       // todo: edit window
       // 先にLayerに追加してからでないと、ClipはTrackにアクセスできない
       match &obj.content {
@@ -229,7 +239,7 @@ impl AppTrait for App {
           clip.set_child_property("foreground-color", &(0x00000000 as u32));
           // let aa = clip.get_child_property("text").unwrap();
           // println!("{:?}", aa.get::<String>());
-          clip.set_duration((gst::SECOND * 5));
+          // clip.set_duration((gst::SECOND * 5));
         }
         _ => panic!("unreachable")
       }
@@ -285,6 +295,62 @@ impl AppTrait for App {
 
     project.ges_timeline.commit_sync();
   }
+
+  fn timeline_change_object_inpoint(&mut self, obj_name: String, inpoint_ms: f32) {
+    let project = &mut *self.project.lock().unwrap();
+
+    let obj = project.get_object_by_name(&obj_name).unwrap();
+    let obj = &mut *obj.lock().unwrap();
+
+    let new_inpoint = gst::USECOND * (inpoint_ms * 1000.0) as u64;
+    let diff = {
+      let start = &*obj.start.lock().unwrap();
+      new_inpoint - start
+    };
+    let new_len = {
+      let len = &*obj.length.lock().unwrap();
+      len - diff
+    };
+    obj.set_length(new_len);
+
+    match &obj.content {
+      // change inpoint and duration
+      ObjectContent::Clip { clip } => {
+        clip.set_inpoint(clip.get_inpoint() + diff);
+      },
+      ObjectContent::Text { clip } => {
+        clip.set_inpoint(clip.get_inpoint() + diff);
+      },
+      ObjectContent::Filter { clip } => {
+        clip.set_inpoint(clip.get_inpoint() + diff);
+      },
+      _ => {
+        // change start and duration
+        obj.set_start(new_inpoint);
+      }
+    }
+
+    project.ges_timeline.commit_sync();
+  }
+
+  fn timeline_change_object_outpoint(&mut self, obj_name: String, outpoint_ms: f32) {
+    let project = &mut *self.project.lock().unwrap();
+
+    let obj = project.get_object_by_name(&obj_name).unwrap();
+    let obj = &mut *obj.lock().unwrap();
+
+    let new_outpoint = gst::USECOND * (outpoint_ms * 1000.0) as u64;
+    let new_len = {
+      let start = &*obj.start.lock().unwrap();
+      let len = &*obj.length.lock().unwrap();
+
+      len + (new_outpoint - start)
+    };
+    obj.set_length(new_len);
+
+    project.ges_timeline.commit_sync();
+  }
+
 
 }
 

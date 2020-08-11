@@ -88,6 +88,7 @@ impl TimelineObjectsTrait for TimelineObjects {
     let obj = self.get_obj(index).unwrap();
     let obj = &*obj.lock().unwrap();
     let len = *obj.length.lock().unwrap();
+    println!("Yo {}", len.mseconds().unwrap());
     len.mseconds().unwrap()
   }
 
