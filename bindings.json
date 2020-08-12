@@ -195,6 +195,9 @@
         "durationMs": {
           "type": "quint64"
         },
+        "maxDurationMs": {
+          "type": "quint64"
+        },
         "startMs": {
           "type": "quint64"
         },

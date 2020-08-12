@@ -33,6 +33,7 @@ pub struct Object {
   pub name: Arc<Mutex<String>>,
   pub content: ObjectContent,
   pub duration: Arc<Mutex<gst::ClockTime>>,
+  pub max_duration: gst::ClockTime, // 0 for Effects, original duration for object w/ clips
 
   // move to "objectPlacement" ?
   pub start: Arc<Mutex<gst::ClockTime>>,
@@ -46,6 +47,7 @@ impl Object {
       name: Arc::new(Mutex::new(name.to_string())),
       content,
       duration: Arc::new(Mutex::new(duration)),
+      max_duration: duration,
 
       start: Arc::new(Mutex::new(start)),
       layer: None,
@@ -65,6 +67,7 @@ impl Object {
       name: Arc::new(Mutex::new(name.to_string())),
       content: ObjectContent::Clip { clip },
       duration: Arc::new(Mutex::new(duration)),
+      max_duration: duration,
 
       start: Arc::new(Mutex::new(gst::SECOND * 0)),
       layer: None
@@ -78,6 +81,7 @@ impl Object {
       name: Arc::new(Mutex::new(name.to_string())),
       content: ObjectContent::Text { clip },
       duration: Arc::new(Mutex::new(duration)),
+      max_duration: duration,
 
       start: Arc::new(Mutex::new(gst::MSECOND * 0)),
       layer: None
@@ -91,6 +95,7 @@ impl Object {
       name: Arc::new(Mutex::new(name.to_string())),
       content: ObjectContent::Filter { clip },
       duration: Arc::new(Mutex::new(duration)),
+      max_duration: gst::MSECOND * 0,
 
       start: Arc::new(Mutex::new(gst::MSECOND * 0)),
       layer: None

@@ -125,6 +125,7 @@ public:
     Q_INVOKABLE quint64 durationMs(int row) const;
     Q_INVOKABLE QString kind(int row) const;
     Q_INVOKABLE quint64 layerId(int row) const;
+    Q_INVOKABLE quint64 maxDurationMs(int row) const;
     Q_INVOKABLE QString name(int row) const;
     Q_INVOKABLE quint64 startMs(int row) const;
 

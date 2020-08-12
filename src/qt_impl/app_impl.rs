@@ -293,32 +293,48 @@ impl AppTrait for App {
     let obj = project.get_object_by_name(&obj_name).unwrap();
     let obj = &mut *obj.lock().unwrap();
 
-    let new_inpoint = gst::USECOND * (inpoint_ms * 1000.0) as u64;
-    let diff = {
+    let diff = { // ClockTime cannot deal with negative values
       let start = &*obj.start.lock().unwrap();
-      new_inpoint - start
+      inpoint_ms as i64 - start.mseconds().unwrap() as i64
     };
     let new_len = {
       let len = &*obj.duration.lock().unwrap();
-      len - diff
-    };
-    obj.set_duration(new_len);
+      let len = len.mseconds().unwrap() as i64;
+      let max = obj.max_duration.mseconds().unwrap() as i64;
+      std::cmp::min(max, len - diff)
+    } as u64;
+    obj.set_start(gst::MSECOND * inpoint_ms as u64);
+    obj.set_duration(gst::MSECOND * new_len);
+
+    println!("Start: {}, Duration: {}, Diff: {}", inpoint_ms, new_len, diff);
 
     match &obj.content {
       // change inpoint and duration
       ObjectContent::Clip { clip } => {
-        clip.set_inpoint(clip.get_inpoint() + diff);
+        let new_inpoint = if (diff > 0) {
+          clip.get_inpoint() + gst::MSECOND * diff as u64
+        } else {
+          clip.get_inpoint() - gst::MSECOND * (-diff as u64)
+        };
+        clip.set_inpoint(new_inpoint);
       },
       ObjectContent::Text { clip } => {
-        clip.set_inpoint(clip.get_inpoint() + diff);
+        let new_inpoint = if (diff > 0) {
+          clip.get_inpoint() + gst::MSECOND * diff as u64
+        } else {
+          clip.get_inpoint() - gst::MSECOND * (-diff as u64)
+        };
+        clip.set_inpoint(new_inpoint);
       },
       ObjectContent::Filter { clip } => {
-        clip.set_inpoint(clip.get_inpoint() + diff);
+        let new_inpoint = if (diff > 0) {
+          clip.get_inpoint() + gst::MSECOND * diff as u64
+        } else {
+          clip.get_inpoint() - gst::MSECOND * (-diff as u64)
+        };
+        clip.set_inpoint(new_inpoint);
       },
-      _ => {
-        // change start and duration
-        obj.set_start(new_inpoint);
-      }
+      _ => {}
     }
 
     project.ges_timeline.commit_sync();

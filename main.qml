@@ -417,7 +417,7 @@ ApplicationWindow {
           Component {
             id: timelineObject
             Rectangle {
-              id: timelineObject1
+              id: timelineObjectRect
               y: 2 * timeline.layerHeight
               x: startMs / 1000.0 * timeline.pixelPerSecond
               height: timeline.layerHeight
@@ -477,6 +477,69 @@ ApplicationWindow {
                   }
                 }
               }
+
+              Rectangle {
+                id: objectInpointRect
+                anchors.verticalCenter: parent.verticalCeter
+                anchors.left: parent.left
+                width: 10
+                height: timeline.layerHeight
+                color: "transparent"
+                  
+                MouseArea {
+                  id: objectInpointMouseArea
+                  anchors.fill: parent
+                  cursorShape: Qt.SizeHorCursor	
+                  
+                  // todo: set maximumX according to current duration/inpoint
+                  drag.target: parent
+                  drag.axis: Drag.XAxis
+                  // drag.minimumX: function() {
+                  //   let maxObjWidth = durationMs / 1000.0 * timeline.pixelPerSecond;
+                  //   let currentRight = parent.parent.x + parent.parent.width;
+                  //   return currentRight - maxObjWidth;
+                  // }
+                  // drag.maximumX: {
+                  //   console.log(parent.parent.width - 10);
+                  // //   // return Math.max(parent.parent.width - 10, 0);
+                  //   return (parent.parent.width <= 10) ? 0 : 100.0;
+                  // }
+                  // drag.minimumX: {
+                  //   console.log(parent.parent.width - 10);
+                  //   return Math.max(parent.parent.width - 10, 0);
+                  // }
+
+                  onMouseXChanged: {
+                    if (drag.active) {
+                      // https://stackoverflow.com/a/29110791/3240599
+                      parent.parent.width -= mouse.x
+                      
+                      let maxWidth = maxDurationMs / 1000.0 * timeline.pixelPerSecond
+                      if (parent.parent.width > maxWidth) {
+                        parent.parent.width = maxWidth
+                        return
+                      }
+                      if (parent.parent.width < 20) {
+                        parent.parent.width = 20
+                        return
+                      }
+
+                      parent.parent.x += mouse.x
+                    }
+                  }
+
+                  onReleased: {
+                    if (drag.active) { // drag.active == false if it was just clicked
+                      console.log("setting inpoint to: " + timeline.timeMsForPosition(parent.parent.x))
+                      app.timelineChangeObjectInpoint(name, timeline.timeMsForPosition(parent.parent.x))
+                    }
+                  }
+                }
+              }
+
+              // MouseArea {
+              //   id: objectOutpointMouseArea
+              // }
             }
           }
 
@@ -615,7 +678,7 @@ ApplicationWindow {
     // }
 
     onAccepted: {
-      app.timelineApplyObjectFilter(objectName, "agingtv")
+      app.timelineApplyObjectFilter(objectName, "alpha method=blue")
     }
 
     function openDialog(objectName) {

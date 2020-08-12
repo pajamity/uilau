@@ -618,6 +618,7 @@ pub trait TimelineObjectsTrait {
     fn duration_ms(&self, index: usize) -> u64;
     fn kind(&self, index: usize) -> &str;
     fn layer_id(&self, index: usize) -> u64;
+    fn max_duration_ms(&self, index: usize) -> u64;
     fn name(&self, index: usize) -> &str;
     fn start_ms(&self, index: usize) -> u64;
 }
@@ -716,6 +717,12 @@ pub unsafe extern "C" fn timeline_objects_data_kind(
 pub unsafe extern "C" fn timeline_objects_data_layer_id(ptr: *const TimelineObjects, row: c_int) -> u64 {
     let o = &*ptr;
     o.layer_id(to_usize(row))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn timeline_objects_data_max_duration_ms(ptr: *const TimelineObjects, row: c_int) -> u64 {
+    let o = &*ptr;
+    o.max_duration_ms(to_usize(row))
 }
 
 #[no_mangle]

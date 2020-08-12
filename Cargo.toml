@@ -36,7 +36,7 @@ gstreamer-audio = "0.16.2"
 gstreamer-editing-services = { path = "../../gstreamer-rs/gstreamer-editing-services" } #"0.16.0"
 libc = "*"
 gstreamer-sys = "*"
-gobject-sys = "*"
+gobject-sys = "0.10.0"
 
 [build-dependencies]
 rust_qt_binding_generator = "0.3.5"

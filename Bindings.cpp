@@ -216,6 +216,7 @@ extern "C" {
     quint64 timeline_objects_data_duration_ms(const TimelineObjects::Private*, int);
     void timeline_objects_data_kind(const TimelineObjects::Private*, int, QString*, qstring_set);
     quint64 timeline_objects_data_layer_id(const TimelineObjects::Private*, int);
+    quint64 timeline_objects_data_max_duration_ms(const TimelineObjects::Private*, int);
     void timeline_objects_data_name(const TimelineObjects::Private*, int, QString*, qstring_set);
     quint64 timeline_objects_data_start_ms(const TimelineObjects::Private*, int);
     void timeline_objects_sort(TimelineObjects::Private*, unsigned char column, Qt::SortOrder order = Qt::AscendingOrder);
@@ -304,6 +305,11 @@ quint64 TimelineObjects::layerId(int row) const
     return timeline_objects_data_layer_id(m_d, row);
 }
 
+quint64 TimelineObjects::maxDurationMs(int row) const
+{
+    return timeline_objects_data_max_duration_ms(m_d, row);
+}
+
 QString TimelineObjects::name(int row) const
 {
     QString s;
@@ -329,8 +335,10 @@ QVariant TimelineObjects::data(const QModelIndex &index, int role) const
         case Qt::UserRole + 2:
             return QVariant::fromValue(layerId(index.row()));
         case Qt::UserRole + 3:
-            return QVariant::fromValue(name(index.row()));
+            return QVariant::fromValue(maxDurationMs(index.row()));
         case Qt::UserRole + 4:
+            return QVariant::fromValue(name(index.row()));
+        case Qt::UserRole + 5:
             return QVariant::fromValue(startMs(index.row()));
         }
         break;
@@ -354,8 +362,9 @@ QHash<int, QByteArray> TimelineObjects::roleNames() const {
     names.insert(Qt::UserRole + 0, "durationMs");
     names.insert(Qt::UserRole + 1, "kind");
     names.insert(Qt::UserRole + 2, "layerId");
-    names.insert(Qt::UserRole + 3, "name");
-    names.insert(Qt::UserRole + 4, "startMs");
+    names.insert(Qt::UserRole + 3, "maxDurationMs");
+    names.insert(Qt::UserRole + 4, "name");
+    names.insert(Qt::UserRole + 5, "startMs");
     return names;
 }
 QVariant TimelineObjects::headerData(int section, Qt::Orientation orientation, int role) const

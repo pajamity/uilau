@@ -88,8 +88,13 @@ impl TimelineObjectsTrait for TimelineObjects {
     let obj = self.get_obj(index).unwrap();
     let obj = &*obj.lock().unwrap();
     let len = *obj.duration.lock().unwrap();
-    println!("Yo {}", len.mseconds().unwrap());
     len.mseconds().unwrap()
+  }
+
+  fn max_duration_ms(&self, index: usize) -> u64 {
+    let obj = self.get_obj(index).unwrap();
+    let obj = &*obj.lock().unwrap();
+    obj.max_duration.mseconds().unwrap()
   }
 
   fn name(&self, index: usize) -> &str {

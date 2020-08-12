@@ -94,12 +94,14 @@ impl Project {
 
   pub fn remove_object_by_name(&mut self, name: &str) {
     let objs = &mut *self.objects.lock().unwrap();
-    println!("looping");
     objs.retain(|o| {
       let o = &*o.lock().unwrap();
       let o_name = &*o.name.lock().unwrap();
+      println!("removeing: {} {}", name, o_name);
       name != o_name
     });
+
+    // todo: removing object does not necessarily mean destroying its members
   }
 
   pub fn remove_object_by_index(&mut self, idx: usize) {
