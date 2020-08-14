@@ -161,6 +161,12 @@
         "positionMs": {
           "type": "quint64"
         },
+        "canvasWidth": {
+          "type": "quint64"
+        },
+        "canvasHeight": {
+          "type": "quint64"
+        },
         "layers": {
           "type": "Layers"
         },

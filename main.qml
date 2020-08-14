@@ -464,6 +464,12 @@ ApplicationWindow {
                 Menu {
                   id: objectContextMenu
                   Action {
+                    text: qsTr("Configure Object...")
+                    onTriggered: {
+                      timelineConfigureObjectDialog.openDialog(name)
+                    }
+                  }
+                  Action {
                     text: qsTr("Delete Object")
                     onTriggered: {
                       app.timelineRemoveObject(name)
@@ -678,6 +684,103 @@ ApplicationWindow {
       this.objectName = objectName
       this.layerId = layerId
       this.x = x
+      this.open()
+    }
+  }
+
+  Dialog {
+    id: timelineConfigureObjectDialog
+    title: qsTr("Configure Object")
+    visible: false
+
+    standardButtons: StandardButton.Save | StandardButton.Cancel
+
+    property string objectName: ""
+
+    Grid {
+      columns: 2
+      spacing: 5
+
+      Text {
+        text: "X"
+      }
+
+      Slider {
+        value: 0
+        from: -app.canvasWidth
+        to: app.canvasWidth 
+        step: 1
+      }
+
+      Text {
+        text: "Y"
+      }
+
+      Slider {
+        value: 0
+        from: -app.canvasHeight
+        to: app.canvasHeight
+        step: 1
+      }
+
+      Text {
+        text: "Scale"
+        
+      }
+
+      Slider {
+        value: 1
+        from: 0
+        to: 10
+      }
+
+      Text {
+        text: "Alpha"
+      }
+
+      Slider {
+        value: 1
+        from: 0
+        to: 10
+      }
+
+      Text {
+        text: "Angle"
+      }
+
+      Slider {
+        value: 0
+        from: 0
+        to: 360
+      }
+
+      Text {
+        text: "Start"
+      }
+
+      Slider {
+        value: 0
+        from: 0
+        to: 10000 // todo
+      }
+
+      Text {
+        text: "Speed"
+      }
+
+      Slider {
+        value: 1
+        from: 0.01
+        to: 10
+      }
+    }
+
+    onAccepted: {
+      app.timelineApplyObjectFilter(objectName, "alpha method=blue")
+    }
+
+    function openDialog(objectName) {
+      this.objectName = objectName
       this.open()
     }
   }
