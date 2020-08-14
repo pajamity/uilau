@@ -349,10 +349,10 @@ impl AppTrait for App {
     let new_outpoint = gst::USECOND * (outpoint_ms * 1000.0) as u64;
     let new_len = {
       let start = &*obj.start.lock().unwrap();
-      let len = &*obj.duration.lock().unwrap();
 
-      len + (new_outpoint - start)
+      new_outpoint - start
     };
+    println!("setting duration to: {}", new_len);
     obj.set_duration(new_len);
 
     project.ges_timeline.commit_sync();

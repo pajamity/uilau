@@ -491,23 +491,8 @@ ApplicationWindow {
                   anchors.fill: parent
                   cursorShape: Qt.SizeHorCursor	
                   
-                  // todo: set maximumX according to current duration/inpoint
                   drag.target: parent
                   drag.axis: Drag.XAxis
-                  // drag.minimumX: function() {
-                  //   let maxObjWidth = durationMs / 1000.0 * timeline.pixelPerSecond;
-                  //   let currentRight = parent.parent.x + parent.parent.width;
-                  //   return currentRight - maxObjWidth;
-                  // }
-                  // drag.maximumX: {
-                  //   console.log(parent.parent.width - 10);
-                  // //   // return Math.max(parent.parent.width - 10, 0);
-                  //   return (parent.parent.width <= 10) ? 0 : 100.0;
-                  // }
-                  // drag.minimumX: {
-                  //   console.log(parent.parent.width - 10);
-                  //   return Math.max(parent.parent.width - 10, 0);
-                  // }
 
                   onMouseXChanged: {
                     if (drag.active) {
@@ -537,9 +522,47 @@ ApplicationWindow {
                 }
               }
 
-              // MouseArea {
-              //   id: objectOutpointMouseArea
-              // }
+              Rectangle {
+                id: objectOutpointRect
+                anchors.verticalCenter: parent.verticalCeter
+                anchors.right: parent.right
+                width: 10
+                height: timeline.layerHeight
+                color: "transparent"
+                  
+                MouseArea {
+                  id: objectOutpointMouseArea
+                  anchors.fill: parent
+                  cursorShape: Qt.SizeHorCursor	
+                  
+                  drag.target: parent
+                  drag.axis: Drag.XAxis
+
+                  onMouseXChanged: {
+                    if (drag.active) {
+                      // https://stackoverflow.com/a/29110791/3240599
+                      parent.parent.width += mouse.x
+                      
+                      let maxWidth = maxDurationMs / 1000.0 * timeline.pixelPerSecond
+                      if (parent.parent.width > maxWidth) {
+                        parent.parent.width = maxWidth
+                        return
+                      }
+                      if (parent.parent.width < 20) {
+                        parent.parent.width = 20
+                        return
+                      }
+                    }
+                  }
+
+                  onReleased: {
+                    if (drag.active) { // drag.active == false if it was just clicked
+                      console.log("setting outpoint to: " + timeline.timeMsForPosition(parent.parent.x + parent.parent.width))
+                      app.timelineChangeObjectOutpoint(name, timeline.timeMsForPosition(parent.parent.x + parent.parent.width))
+                    }
+                  }
+                }
+              }
             }
           }
 
