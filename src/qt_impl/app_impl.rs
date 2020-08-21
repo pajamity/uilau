@@ -71,25 +71,32 @@ impl AppTrait for App {
   fn objects(&self) -> &TimelineObjects { &self.objects }
   fn objects_mut(&mut self) -> &mut TimelineObjects { &mut self.objects }
 
-  fn play(&mut self) {
+  fn playing(&self) -> bool {
     let project = &*self.project.lock().unwrap();
-    project.ges_pipeline
-      .set_state(gst::State::Playing)
-      .expect("could not change the state");
+    println!("playing?: {}", project.playing);
+    project.playing
+  }
+
+  fn play(&mut self) {
+    { // the emitter will call playing() and try to obtain a lock for project, so we have parentheses here
+      let project = &mut *self.project.lock().unwrap();
+      project.play();
+    }
+    self.emit.playing_changed();
   }
   
   fn pause(&mut self) {
-    let project = &*self.project.lock().unwrap();
-    project.ges_pipeline
-      .set_state(gst::State::Paused)
-      .expect("could not change the state");
+    {
+      let project = &mut *self.project.lock().unwrap();
+      project.pause();
+    }
+    self.emit.playing_changed();
   }
 
   fn duration_ms(&self) -> u64 {
     let project = &*self.project.lock().unwrap();
     if let Some(dur) = project.ges_pipeline.query_duration::<gst::ClockTime>() {
       let ms = dur.mseconds().unwrap();
-      println!("dur {} vs {}", ms, project.ges_timeline.get_duration().mseconds().unwrap());
       return ms;
     }
     0
@@ -122,45 +129,22 @@ impl AppTrait for App {
   }
 
   fn move_timeline_object(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32) {
-    let project = &mut *self.project.lock().unwrap();
+    {
+      let project = &mut *self.project.lock().unwrap();
 
-    project.move_object_to_layer(&obj_name, dst_layer_id as usize);
-    let obj = project.get_object_by_name(&obj_name).unwrap();
-    let obj = &mut *obj.lock().unwrap();
-    obj.set_start(gst::USECOND * ((dst_time_ms * 1000.0) as u64));
+      project.move_object_to_layer(&obj_name, dst_layer_id as usize);
+      let obj = project.get_object_by_name(&obj_name).unwrap();
+      let obj = &mut *obj.lock().unwrap();
+      obj.set_start(gst::USECOND * ((dst_time_ms * 1000.0) as u64));
 
-    // todo: commitで時々フリーズする(大きな動画？)
-    project.ges_timeline.commit_sync();
+      // todo: 一時停止しないとcommitで時々フリーズする(大きな動画？)
+      project.pause();
+      println!("committing...");
+      project.ges_timeline.commit();
+    }
 
-    //
-    // let dst_layer_id = dst_layer_id as usize;
-    // // fixme: not efficient if we had lots of objects
-    // let layers = project.layers.clone();
-    // let dst_layer = project.get_layer(dst_layer_id as usize);
-    //
-    // let layers = &mut *layers.lock().unwrap();
-    // for (layer_id, layer) in layers.iter().enumerate() {
-    //   let layer = &mut *layer.lock().unwrap();
-    //   let objects = layer.objects().clone();
-    //   for (_, obj) in objects {
-    //     let objj = obj.clone();
-    //     let mut obj = &mut *obj.lock().unwrap();
-    //     if obj.id == object_id {
-    //       println!("Found obj: {}", obj.id);
-    //
-    //       // move between layers
-    //       if layer_id != dst_layer_id {
-    //         layer.remove_object(&mut obj);
-    //
-    //         let dst_idx = project.find_layer_idx(&dst_layer).unwrap();
-    //         project.add_object_to_layer(&obj, dst_idx);
-    //       }
-    //
-    //       // move inside layers
-    //       obj.set_start(((dst_time_ms * 1000.0) as u64) * gst::USECOND);
-    //     }
-    //   }
-    // }
+    self.emit.playing_changed();
+    println!("committed");
   }
 
   fn timeline_add_file_object(&mut self, file_urls: String, dst_layer_id: u64, dst_time_ms: f32) {
@@ -248,120 +232,133 @@ impl AppTrait for App {
   }
 
   fn timeline_configure_filter(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32) {
-    let project = &mut *self.project.lock().unwrap();
-    if obj_name.is_empty() { // New Text object
-      let len = {
-        let objects = &*project.objects.lock().unwrap();
-        objects.len()
-      };
+    {
+      let project = &mut *self.project.lock().unwrap();
+      if obj_name.is_empty() { // New Text object
+        let len = {
+          let objects = &*project.objects.lock().unwrap();
+          objects.len()
+        };
 
-      // let video_desc= "alpha method=green";
-      let video_desc= "agingtv";
+        // let video_desc= "alpha method=green";
+        let video_desc = "agingtv";
 
-      // Designating "" as audio_desc causes an error since the entire description becomes 'bin.( audioconvert ! audioresample ! )' which is invalid
-      // todo: find a way to pass NULL to GStreamer (native lib)
-      let audio_desc= "audioamplify";
-      let audio_desc= "audiopanorama";
-      let clip = ges::EffectClip::new(video_desc, audio_desc).unwrap();
-      clip.set_duration(gst::SECOND * 5);
+        // Designating "" as audio_desc causes an error since the entire description becomes 'bin.( audioconvert ! audioresample ! )' which is invalid
+        // todo: find a way to pass NULL to GStreamer (native lib)
+        let audio_desc = "audioamplify";
+        let audio_desc = "audiopanorama";
+        let clip = ges::EffectClip::new(video_desc, audio_desc).unwrap();
+        clip.set_duration(gst::SECOND * 5);
 
-      let mut obj = Object::new_from_effect_clip(&util::random_name_for_layer(), clip);
-      obj.set_start(gst::USECOND * (dst_time_ms * 1000.0) as u64);
-      let obj = Arc::new(Mutex::new(obj));
+        let mut obj = Object::new_from_effect_clip(&util::random_name_for_layer(), clip);
+        obj.set_start(gst::USECOND * (dst_time_ms * 1000.0) as u64);
+        let obj = Arc::new(Mutex::new(obj));
 
-      &self.objects.model.begin_insert_rows(len, len); // Notify Qt
-      project.add_object_to_layer(&obj, dst_layer_id as usize);
-      &self.objects.model.end_insert_rows();
+        &self.objects.model.begin_insert_rows(len, len); // Notify Qt
+        project.add_object_to_layer(&obj, dst_layer_id as usize);
+        &self.objects.model.end_insert_rows();
 
-      let obj = &*obj.lock().unwrap();
-      match &obj.content {
-        ObjectContent::Filter { clip } => {
-          // todo
-          let effect = ges::Effect::new("agingtv").expect("Failed to create effect");
-          clip.add(&effect).unwrap();
+        let obj = &*obj.lock().unwrap();
+        match &obj.content {
+          ObjectContent::Filter { clip } => {
+            // todo
+            let effect = ges::Effect::new("agingtv").expect("Failed to create effect");
+            clip.add(&effect).unwrap();
 
-          let effect = ges::Effect::new("audiopanorama").expect("Failed to create effect");
-          clip.add(&effect).unwrap();
+            let effect = ges::Effect::new("audiopanorama").expect("Failed to create effect");
+            clip.add(&effect).unwrap();
+          }
+          _ => panic!("unreachable")
         }
-        _ => panic!("unreachable")
+      } else {
+        // todo: if object already exists
       }
-
-    } else {
-      // todo: if object already exists
+      project.pause();
+      project.ges_timeline.commit();
     }
 
-    project.ges_timeline.commit_sync();
+    self.emit.playing_changed();
   }
 
   fn timeline_change_object_inpoint(&mut self, obj_name: String, inpoint_ms: f32) {
-    let project = &mut *self.project.lock().unwrap();
+    {
+      let project = &mut *self.project.lock().unwrap();
 
-    let obj = project.get_object_by_name(&obj_name).unwrap();
-    let obj = &mut *obj.lock().unwrap();
+      let obj = project.get_object_by_name(&obj_name).unwrap();
+      let obj = &mut *obj.lock().unwrap();
 
-    let diff = { // ClockTime cannot deal with negative values
-      let start = &*obj.start.lock().unwrap();
-      inpoint_ms as i64 - start.mseconds().unwrap() as i64
-    };
-    let new_len = {
-      let len = &*obj.duration.lock().unwrap();
-      let len = len.mseconds().unwrap() as i64;
-      let max = obj.max_duration.mseconds().unwrap() as i64;
-      std::cmp::min(max, len - diff)
-    } as u64;
-    obj.set_start(gst::MSECOND * inpoint_ms as u64);
-    obj.set_duration(gst::MSECOND * new_len);
+      let diff = { // ClockTime cannot deal with negative values
+        let start = &*obj.start.lock().unwrap();
+        inpoint_ms as i64 - start.mseconds().unwrap() as i64
+      };
+      let new_len = {
+        let len = &*obj.duration.lock().unwrap();
+        let len = len.mseconds().unwrap() as i64;
+        let max = obj.max_duration.mseconds().unwrap() as i64;
+        std::cmp::min(max, len - diff)
+      } as u64;
+      obj.set_start(gst::MSECOND * inpoint_ms as u64);
+      obj.set_duration(gst::MSECOND * new_len);
 
-    println!("Start: {}, Duration: {}, Diff: {}", inpoint_ms, new_len, diff);
+      println!("Start: {}, Duration: {}, Diff: {}", inpoint_ms, new_len, diff);
 
-    match &obj.content {
-      // change inpoint and duration
-      ObjectContent::Clip { clip } => {
-        let new_inpoint = if (diff > 0) {
-          clip.get_inpoint() + gst::MSECOND * diff as u64
-        } else {
-          clip.get_inpoint() - gst::MSECOND * (-diff as u64)
-        };
-        clip.set_inpoint(new_inpoint);
-      },
-      ObjectContent::Text { clip } => {
-        let new_inpoint = if (diff > 0) {
-          clip.get_inpoint() + gst::MSECOND * diff as u64
-        } else {
-          clip.get_inpoint() - gst::MSECOND * (-diff as u64)
-        };
-        clip.set_inpoint(new_inpoint);
-      },
-      ObjectContent::Filter { clip } => {
-        let new_inpoint = if (diff > 0) {
-          clip.get_inpoint() + gst::MSECOND * diff as u64
-        } else {
-          clip.get_inpoint() - gst::MSECOND * (-diff as u64)
-        };
-        clip.set_inpoint(new_inpoint);
-      },
-      _ => {}
+      match &obj.content {
+        // change inpoint and duration
+        ObjectContent::Clip { clip } => {
+          let new_inpoint = if (diff > 0) {
+            clip.get_inpoint() + gst::MSECOND * diff as u64
+          } else {
+            clip.get_inpoint() - gst::MSECOND * (-diff as u64)
+          };
+          clip.set_inpoint(new_inpoint);
+        },
+        ObjectContent::Text { clip } => {
+          let new_inpoint = if (diff > 0) {
+            clip.get_inpoint() + gst::MSECOND * diff as u64
+          } else {
+            clip.get_inpoint() - gst::MSECOND * (-diff as u64)
+          };
+          clip.set_inpoint(new_inpoint);
+        },
+        ObjectContent::Filter { clip } => {
+          let new_inpoint = if (diff > 0) {
+            clip.get_inpoint() + gst::MSECOND * diff as u64
+          } else {
+            clip.get_inpoint() - gst::MSECOND * (-diff as u64)
+          };
+          clip.set_inpoint(new_inpoint);
+        },
+        _ => {}
+      }
+
+      project.pause();
+      project.ges_timeline.commit();
     }
 
-    project.ges_timeline.commit_sync();
+    self.emit.playing_changed();
   }
 
   fn timeline_change_object_outpoint(&mut self, obj_name: String, outpoint_ms: f32) {
-    let project = &mut *self.project.lock().unwrap();
+    {
+      let project = &mut *self.project.lock().unwrap();
 
-    let obj = project.get_object_by_name(&obj_name).unwrap();
-    let obj = &mut *obj.lock().unwrap();
+      let obj = project.get_object_by_name(&obj_name).unwrap();
+      let obj = &mut *obj.lock().unwrap();
 
-    let new_outpoint = gst::USECOND * (outpoint_ms * 1000.0) as u64;
-    let new_len = {
-      let start = &*obj.start.lock().unwrap();
+      let new_outpoint = gst::USECOND * (outpoint_ms * 1000.0) as u64;
+      let new_len = {
+        let start = &*obj.start.lock().unwrap();
 
-      new_outpoint - start
-    };
-    println!("setting duration to: {}", new_len);
-    obj.set_duration(new_len);
+        new_outpoint - start
+      };
+      println!("setting duration to: {}", new_len);
+      obj.set_duration(new_len);
 
-    project.ges_timeline.commit_sync();
+      project.pause();
+      project.ges_timeline.commit();
+    }
+
+    self.emit.playing_changed();
   }
 
   fn timeline_apply_object_filter(&mut self, obj_name: String, description: String) {

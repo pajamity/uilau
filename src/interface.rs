@@ -96,6 +96,7 @@ pub struct AppEmitter {
     canvas_height_changed: fn(*mut AppQObject),
     canvas_width_changed: fn(*mut AppQObject),
     duration_ms_changed: fn(*mut AppQObject),
+    playing_changed: fn(*mut AppQObject),
     position_ms_changed: fn(*mut AppQObject),
 }
 
@@ -114,6 +115,7 @@ impl AppEmitter {
             canvas_height_changed: self.canvas_height_changed,
             canvas_width_changed: self.canvas_width_changed,
             duration_ms_changed: self.duration_ms_changed,
+            playing_changed: self.playing_changed,
             position_ms_changed: self.position_ms_changed,
         }
     }
@@ -139,6 +141,12 @@ impl AppEmitter {
             (self.duration_ms_changed)(ptr);
         }
     }
+    pub fn playing_changed(&mut self) {
+        let ptr = self.qobject.load(Ordering::SeqCst);
+        if !ptr.is_null() {
+            (self.playing_changed)(ptr);
+        }
+    }
     pub fn position_ms_changed(&mut self) {
         let ptr = self.qobject.load(Ordering::SeqCst);
         if !ptr.is_null() {
@@ -159,6 +167,7 @@ pub trait AppTrait {
     fn layers_mut(&mut self) -> &mut Layers;
     fn objects(&self) -> &TimelineObjects;
     fn objects_mut(&mut self) -> &mut TimelineObjects;
+    fn playing(&self) -> bool;
     fn position_ms(&self) -> u64;
     fn move_timeline_object(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
     fn pause(&mut self) -> ();
@@ -206,6 +215,7 @@ pub extern "C" fn app_new(
     objects_end_move_rows: fn(*mut TimelineObjectsQObject),
     objects_begin_remove_rows: fn(*mut TimelineObjectsQObject, usize, usize),
     objects_end_remove_rows: fn(*mut TimelineObjectsQObject),
+    app_playing_changed: fn(*mut AppQObject),
     app_position_ms_changed: fn(*mut AppQObject),
 ) -> *mut App {
     let layers_emit = LayersEmitter {
@@ -251,6 +261,7 @@ pub extern "C" fn app_new(
         canvas_height_changed: app_canvas_height_changed,
         canvas_width_changed: app_canvas_width_changed,
         duration_ms_changed: app_duration_ms_changed,
+        playing_changed: app_playing_changed,
         position_ms_changed: app_position_ms_changed,
     };
     let d_app = App::new(app_emit,
@@ -287,6 +298,11 @@ pub unsafe extern "C" fn app_layers_get(ptr: *mut App) -> *mut Layers {
 #[no_mangle]
 pub unsafe extern "C" fn app_objects_get(ptr: *mut App) -> *mut TimelineObjects {
     (&mut *ptr).objects_mut()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_playing_get(ptr: *const App) -> bool {
+    (&*ptr).playing()
 }
 
 #[no_mangle]

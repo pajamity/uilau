@@ -169,6 +169,9 @@
         }
       },
       "properties": {
+        "playing": {
+          "type": "bool"
+        },
         "durationMs": {
           "type": "quint64"
         },

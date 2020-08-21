@@ -24,6 +24,7 @@ private:
     Q_PROPERTY(quint64 durationMs READ durationMs NOTIFY durationMsChanged FINAL)
     Q_PROPERTY(Layers* layers READ layers NOTIFY layersChanged FINAL)
     Q_PROPERTY(TimelineObjects* objects READ objects NOTIFY objectsChanged FINAL)
+    Q_PROPERTY(bool playing READ playing NOTIFY playingChanged FINAL)
     Q_PROPERTY(quint64 positionMs READ positionMs NOTIFY positionMsChanged FINAL)
     explicit App(bool owned, QObject *parent);
 public:
@@ -36,6 +37,7 @@ public:
     Layers* layers();
     const TimelineObjects* objects() const;
     TimelineObjects* objects();
+    bool playing() const;
     quint64 positionMs() const;
     Q_INVOKABLE void moveTimelineObject(const QString& obj_name, quint64 dst_layer_id, float dst_time_ms);
     Q_INVOKABLE void pause();
@@ -55,6 +57,7 @@ Q_SIGNALS:
     void durationMsChanged();
     void layersChanged();
     void objectsChanged();
+    void playingChanged();
     void positionMsChanged();
 };
 

@@ -76,26 +76,26 @@ ApplicationWindow {
       objectName: "playPauseButton"
       width: 80
       height: 30
-      text: "Play"
+      text: app.playing ? "Pause" : "Play"
 
-      property bool playing: false
+      // property bool playing: false
 
       function play() {
-        this.playing = true
-        this.text = "Pause"
+        // this.playing = true
+        // this.text = "Pause"
         previewSliderTimer.start()
         app.play()
       }
 
       function pause() {
-        this.playing = false
-        this.text = "Play"
+        // this.playing = false
+        // this.text = "Play"
         previewSliderTimer.stop()
         app.pause()
       }
       
       onClicked: {
-        if (playing) {
+        if (app.playing) {
           pause()
         } else {
           play()

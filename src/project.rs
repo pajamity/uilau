@@ -18,6 +18,7 @@ pub struct Project {
   pub layers: Arc<Mutex<Vec<Arc<Mutex<Layer>>>>>,
   pub objects: Arc<Mutex<Vec<Arc<Mutex<Object>>>>>,
   pub ges_pipeline: ges::Pipeline,
+  pub playing: bool,
 }
 
 impl Project {
@@ -31,6 +32,7 @@ impl Project {
       layers: Arc::new(Mutex::new(vec![])),
       objects: Arc::new(Mutex::new(vec![])),
       ges_pipeline: ppl,
+      playing: false,
     };
 
     s
@@ -228,5 +230,21 @@ impl Project {
       },
       _ => {}
     }
+  }
+
+  // Playback
+  pub fn play(&mut self) {
+    self.ges_pipeline
+      .set_state(gst::State::Playing)
+      .unwrap();
+    self.playing = true;
+  }
+
+  pub fn pause(&mut self) {
+    self.ges_pipeline
+      .set_state(gst::State::Paused)
+      .unwrap();
+    self.playing = false;
+    // todo: when does GESPipeline's state change automatically (without user actions?)
   }
 }

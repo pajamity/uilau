@@ -40,6 +40,10 @@ namespace {
     {
         Q_EMIT o->durationMsChanged();
     }
+    inline void appPlayingChanged(App* o)
+    {
+        Q_EMIT o->playingChanged();
+    }
     inline void appPositionMsChanged(App* o)
     {
         Q_EMIT o->positionMsChanged();
@@ -70,13 +74,14 @@ extern "C" {
         void (*)(TimelineObjects*, int, int, int),
         void (*)(TimelineObjects*),
         void (*)(TimelineObjects*, int, int),
-        void (*)(TimelineObjects*), void (*)(App*));
+        void (*)(TimelineObjects*), void (*)(App*), void (*)(App*));
     void app_free(App::Private*);
     quint64 app_canvas_height_get(const App::Private*);
     quint64 app_canvas_width_get(const App::Private*);
     quint64 app_duration_ms_get(const App::Private*);
     Layers::Private* app_layers_get(const App::Private*);
     TimelineObjects::Private* app_objects_get(const App::Private*);
+    bool app_playing_get(const App::Private*);
     quint64 app_position_ms_get(const App::Private*);
     void app_move_timeline_object(App::Private*, const ushort*, int, quint64, float);
     void app_pause(App::Private*);
@@ -507,6 +512,7 @@ App::App(QObject *parent):
             o->endRemoveRows();
         }
 ,
+        appPlayingChanged,
         appPositionMsChanged)),
     m_ownsPrivate(true)
 {
@@ -552,6 +558,10 @@ const TimelineObjects* App::objects() const
 TimelineObjects* App::objects()
 {
     return m_objects;
+}
+bool App::playing() const
+{
+    return app_playing_get(m_d);
 }
 quint64 App::positionMs() const
 {
