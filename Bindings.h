@@ -19,6 +19,8 @@ private:
     TimelineObjects* const m_objects;
     Private * m_d;
     bool m_ownsPrivate;
+    Q_PROPERTY(quint64 canvasHeight READ canvasHeight NOTIFY canvasHeightChanged FINAL)
+    Q_PROPERTY(quint64 canvasWidth READ canvasWidth NOTIFY canvasWidthChanged FINAL)
     Q_PROPERTY(quint64 durationMs READ durationMs NOTIFY durationMsChanged FINAL)
     Q_PROPERTY(Layers* layers READ layers NOTIFY layersChanged FINAL)
     Q_PROPERTY(TimelineObjects* objects READ objects NOTIFY objectsChanged FINAL)
@@ -27,6 +29,8 @@ private:
 public:
     explicit App(QObject *parent = nullptr);
     ~App();
+    quint64 canvasHeight() const;
+    quint64 canvasWidth() const;
     quint64 durationMs() const;
     const Layers* layers() const;
     Layers* layers();
@@ -44,7 +48,10 @@ public:
     Q_INVOKABLE void timelineConfigureFilter(const QString& obj_name, quint64 dst_layer_id, float dst_time_ms);
     Q_INVOKABLE void timelineConfigureText(const QString& obj_name, quint64 dst_layer_id, float dst_time_ms, const QString& text);
     Q_INVOKABLE void timelineRemoveObject(const QString& obj_name);
+    Q_INVOKABLE void timelineSetObjectX(const QString& obj_name, qint64 x);
 Q_SIGNALS:
+    void canvasHeightChanged();
+    void canvasWidthChanged();
     void durationMsChanged();
     void layersChanged();
     void objectsChanged();

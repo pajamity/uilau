@@ -706,10 +706,17 @@ ApplicationWindow {
       }
 
       Slider {
+        id: xSlider
         value: 0
         from: -app.canvasWidth
         to: app.canvasWidth 
-        step: 1
+        stepSize: 1
+
+        onMoved: {
+          console.log(xSlider.value)
+          app.timelineSetObjectX(objectName, xSlider.value)
+          app.timelineApplyObjectFilter(objectName, "alpha method=blue")
+        }
       }
 
       Text {
@@ -720,7 +727,7 @@ ApplicationWindow {
         value: 0
         from: -app.canvasHeight
         to: app.canvasHeight
-        step: 1
+        stepSize: 1
       }
 
       Text {

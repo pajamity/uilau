@@ -152,6 +152,20 @@
               "type": "QString"
             }
           ]
+        },
+        "timelineSetObjectX": {
+          "return": "void",
+          "mut": true,
+          "arguments": [
+            {
+              "name": "obj_name",
+              "type": "QString"
+            },
+            {
+              "name": "x",
+              "type": "qint64"
+            }
+          ]
         }
       },
       "properties": {
@@ -172,6 +186,12 @@
         },
         "objects": {
           "type": "TimelineObjects"
+        },
+        "canvasHeight": {
+          "type": "quint64"
+        },
+        "canvasWidth": {
+          "type": "quint64"
         }
       }
     },

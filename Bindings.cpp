@@ -28,6 +28,14 @@ namespace {
     inline QVariant cleanNullQVariant(const QVariant& v) {
         return (v.isNull()) ?QVariant() :v;
     }
+    inline void appCanvasHeightChanged(App* o)
+    {
+        Q_EMIT o->canvasHeightChanged();
+    }
+    inline void appCanvasWidthChanged(App* o)
+    {
+        Q_EMIT o->canvasWidthChanged();
+    }
     inline void appDurationMsChanged(App* o)
     {
         Q_EMIT o->durationMsChanged();
@@ -38,7 +46,7 @@ namespace {
     }
 }
 extern "C" {
-    App::Private* app_new(App*, void (*)(App*), Layers*,
+    App::Private* app_new(App*, void (*)(App*), void (*)(App*), void (*)(App*), Layers*,
         void (*)(const Layers*),
         void (*)(Layers*),
         void (*)(Layers*),
@@ -64,6 +72,8 @@ extern "C" {
         void (*)(TimelineObjects*, int, int),
         void (*)(TimelineObjects*), void (*)(App*));
     void app_free(App::Private*);
+    quint64 app_canvas_height_get(const App::Private*);
+    quint64 app_canvas_width_get(const App::Private*);
     quint64 app_duration_ms_get(const App::Private*);
     Layers::Private* app_layers_get(const App::Private*);
     TimelineObjects::Private* app_objects_get(const App::Private*);
@@ -79,6 +89,7 @@ extern "C" {
     void app_timeline_configure_filter(App::Private*, const ushort*, int, quint64, float);
     void app_timeline_configure_text(App::Private*, const ushort*, int, quint64, float, const ushort*, int);
     void app_timeline_remove_object(App::Private*, const ushort*, int);
+    void app_timeline_set_object_x(App::Private*, const ushort*, int, qint64);
 };
 
 extern "C" {
@@ -415,6 +426,8 @@ App::App(QObject *parent):
     m_layers(new Layers(false, this)),
     m_objects(new TimelineObjects(false, this)),
     m_d(app_new(this,
+        appCanvasHeightChanged,
+        appCanvasWidthChanged,
         appDurationMsChanged, m_layers,
         [](const Layers* o) {
             Q_EMIT o->newDataReady(QModelIndex());
@@ -512,6 +525,14 @@ App::~App() {
         app_free(m_d);
     }
 }
+quint64 App::canvasHeight() const
+{
+    return app_canvas_height_get(m_d);
+}
+quint64 App::canvasWidth() const
+{
+    return app_canvas_width_get(m_d);
+}
 quint64 App::durationMs() const
 {
     return app_duration_ms_get(m_d);
@@ -579,6 +600,10 @@ void App::timelineConfigureText(const QString& obj_name, quint64 dst_layer_id, f
 void App::timelineRemoveObject(const QString& obj_name)
 {
     return app_timeline_remove_object(m_d, obj_name.utf16(), obj_name.size());
+}
+void App::timelineSetObjectX(const QString& obj_name, qint64 x)
+{
+    return app_timeline_set_object_x(m_d, obj_name.utf16(), obj_name.size(), x);
 }
 Layers::Layers(bool /*owned*/, QObject *parent):
     QAbstractItemModel(parent),

@@ -93,6 +93,8 @@ pub struct AppQObject {}
 
 pub struct AppEmitter {
     qobject: Arc<AtomicPtr<AppQObject>>,
+    canvas_height_changed: fn(*mut AppQObject),
+    canvas_width_changed: fn(*mut AppQObject),
     duration_ms_changed: fn(*mut AppQObject),
     position_ms_changed: fn(*mut AppQObject),
 }
@@ -109,6 +111,8 @@ impl AppEmitter {
     pub fn clone(&mut self) -> AppEmitter {
         AppEmitter {
             qobject: self.qobject.clone(),
+            canvas_height_changed: self.canvas_height_changed,
+            canvas_width_changed: self.canvas_width_changed,
             duration_ms_changed: self.duration_ms_changed,
             position_ms_changed: self.position_ms_changed,
         }
@@ -116,6 +120,18 @@ impl AppEmitter {
     fn clear(&self) {
         let n: *const AppQObject = null();
         self.qobject.store(n as *mut AppQObject, Ordering::SeqCst);
+    }
+    pub fn canvas_height_changed(&mut self) {
+        let ptr = self.qobject.load(Ordering::SeqCst);
+        if !ptr.is_null() {
+            (self.canvas_height_changed)(ptr);
+        }
+    }
+    pub fn canvas_width_changed(&mut self) {
+        let ptr = self.qobject.load(Ordering::SeqCst);
+        if !ptr.is_null() {
+            (self.canvas_width_changed)(ptr);
+        }
     }
     pub fn duration_ms_changed(&mut self) {
         let ptr = self.qobject.load(Ordering::SeqCst);
@@ -136,6 +152,8 @@ pub trait AppTrait {
         layers: Layers,
         objects: TimelineObjects) -> Self;
     fn emit(&mut self) -> &mut AppEmitter;
+    fn canvas_height(&self) -> u64;
+    fn canvas_width(&self) -> u64;
     fn duration_ms(&self) -> u64;
     fn layers(&self) -> &Layers;
     fn layers_mut(&mut self) -> &mut Layers;
@@ -153,11 +171,14 @@ pub trait AppTrait {
     fn timeline_configure_filter(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32) -> ();
     fn timeline_configure_text(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32, text: String) -> ();
     fn timeline_remove_object(&mut self, obj_name: String) -> ();
+    fn timeline_set_object_x(&mut self, obj_name: String, x: i64) -> ();
 }
 
 #[no_mangle]
 pub extern "C" fn app_new(
     app: *mut AppQObject,
+    app_canvas_height_changed: fn(*mut AppQObject),
+    app_canvas_width_changed: fn(*mut AppQObject),
     app_duration_ms_changed: fn(*mut AppQObject),
     layers: *mut LayersQObject,
     layers_new_data_ready: fn(*mut LayersQObject),
@@ -227,6 +248,8 @@ pub extern "C" fn app_new(
     let d_objects = TimelineObjects::new(objects_emit, model);
     let app_emit = AppEmitter {
         qobject: Arc::new(AtomicPtr::new(app)),
+        canvas_height_changed: app_canvas_height_changed,
+        canvas_width_changed: app_canvas_width_changed,
         duration_ms_changed: app_duration_ms_changed,
         position_ms_changed: app_position_ms_changed,
     };
@@ -239,6 +262,16 @@ pub extern "C" fn app_new(
 #[no_mangle]
 pub unsafe extern "C" fn app_free(ptr: *mut App) {
     Box::from_raw(ptr).emit().clear();
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_canvas_height_get(ptr: *const App) -> u64 {
+    (&*ptr).canvas_height()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_canvas_width_get(ptr: *const App) -> u64 {
+    (&*ptr).canvas_width()
 }
 
 #[no_mangle]
@@ -345,6 +378,14 @@ pub unsafe extern "C" fn app_timeline_remove_object(ptr: *mut App, obj_name_str:
     set_string_from_utf16(&mut obj_name, obj_name_str, obj_name_len);
     let o = &mut *ptr;
     o.timeline_remove_object(obj_name)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn app_timeline_set_object_x(ptr: *mut App, obj_name_str: *const c_ushort, obj_name_len: c_int, x: i64) {
+    let mut obj_name = String::new();
+    set_string_from_utf16(&mut obj_name, obj_name_str, obj_name_len);
+    let o = &mut *ptr;
+    o.timeline_set_object_x(obj_name, x)
 }
 
 pub struct LayersQObject {}

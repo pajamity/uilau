@@ -105,10 +105,16 @@ impl AppTrait for App {
     0
   }
 
+  fn canvas_height(&self) -> u64 {
+    return 480
+  }
+
+  fn canvas_width(&self) -> u64 {
+    return 640
+  }
+
   fn seek_to(&mut self, to: u64) {
-    println!("called");
     let project = &*self.project.lock().unwrap();
-    println!("kalled {}", to);
     if project.ges_pipeline.seek_simple(gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT, gst::MSECOND * (to as u64))
       .is_err() {
       println!("Seeking failed");
@@ -379,6 +385,14 @@ impl AppTrait for App {
     }
 
     project.ges_timeline.commit_sync();
+  }
+
+  fn timeline_set_object_x(&mut self, obj_name: String, x: i64) {
+    let project = &mut *self.project.lock().unwrap();
+    let obj = project.get_object_by_name(&obj_name).unwrap();
+    let obj = &*obj.lock().unwrap();
+
+    // todo: find applied filters
   }
 }
 
