@@ -54,6 +54,25 @@ impl Project {
     layers[layer_idx].clone()
   }
 
+  pub fn get_layer_or_create(&mut self, layer_idx: usize) -> Arc<Mutex<Layer>> {
+    let layers = &mut *self.layers.lock().unwrap();
+    match layers.get(layer_idx) {
+      Some(layer) => {
+        layer.clone()
+      },
+      None => {
+        layers.resize_with(layer_idx + 1, || {
+          let name = util::random_name_for_layer();
+
+          let ges_layer = self.ges_timeline.append_layer();
+          let layer = Arc::new(Mutex::new(Layer::new(&name, ges_layer)));
+          layer
+        });
+        layers[layer_idx].clone()
+      }
+    }
+  }
+
   pub fn find_layer_idx(&self, given: &Arc<Mutex<Layer>>) -> Option<usize> {
     let name = {
       let given = &*given.lock().unwrap();
@@ -159,7 +178,7 @@ impl Project {
     self.add_object(obj);
 
     let obj = &mut *obj.lock().unwrap();
-    let layer = self.get_layer(layer_idx);
+    let layer = self.get_layer_or_create(layer_idx);
     let l = &*layer.lock().unwrap();
 
     obj.set_layer(&layer);
@@ -188,7 +207,7 @@ impl Project {
 
     let src = &*src.lock().unwrap();
 
-    let dst_layer = self.get_layer(layer_idx);
+    let dst_layer = self.get_layer_or_create(layer_idx);
     obj.set_layer(&dst_layer);
 
     match &obj.content {
