@@ -141,37 +141,43 @@ impl AppTrait for App {
       obj.set_start(gst::USECOND * ((dst_time_ms * 1000.0) as u64));
       // todo: 一時停止しないとcommitで時々フリーズする(大きな動画？)
       project.pause();
-      println!("committing...");
       project.ges_timeline.commit();
     }
 
     self.emit.playing_changed();
-    println!("committed");
   }
 
   fn timeline_add_file_object(&mut self, file_urls: String, dst_layer_id: u64, dst_time_ms: f32) {
     println!("Adding object to: {}", dst_layer_id);
 
-    let project = &mut *self.project.lock().unwrap();
+    {
+      let project = &mut *self.project.lock().unwrap();
+      project.pause();
 
-    let len = {
-      let objects = &*project.objects.lock().unwrap();
-      objects.len()
-    };
+      let len = {
+        let objects = &*project.objects.lock().unwrap();
+        objects.len()
+      };
 
-    for url in file_urls.split("::::") {
-      println!("Opening {}", url);
+      for url in file_urls.split("::::") {
+        println!("Opening {}", url);
 
-      &self.objects.model.begin_insert_rows(len, len); // Notify Qt
+        &self.objects.model.begin_insert_rows(len, len); // Notify Qt
 
-      let clip = ges::UriClip::new(&url).expect("Could not create clip");
-      let mut obj = Object::new_from_uri_clip( &util::random_name_for_layer(), clip);
-      obj.set_start(gst::USECOND * (dst_time_ms * 1000.0) as u64);
-      let obj = Arc::new(Mutex::new(obj));
-      project.add_object_to_layer(&obj, dst_layer_id as usize);
+        let clip = ges::UriClip::new(&url).expect("Could not create clip");
+        let mut obj = Object::new_from_uri_clip(&util::random_name_for_layer(), clip);
+        obj.set_start(gst::USECOND * (dst_time_ms * 1000.0) as u64);
+        let obj = Arc::new(Mutex::new(obj));
+        println!("yooo");
+        project.add_object_to_layer(&obj, dst_layer_id as usize);
 
-      &self.objects.model.end_insert_rows();
+      }
+
+      project.ges_timeline.commit();
     }
+
+    self.emit.playing_changed();
+    &self.objects.model.end_insert_rows();
   }
 
   fn timeline_remove_object(&mut self, obj_name: String) {
