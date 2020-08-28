@@ -787,7 +787,6 @@ ApplicationWindow {
     }
 
     function openDialog(objName) {
-      console.log("wowowowow: " + objName)
       this.objName = objName
       this.open()
     }

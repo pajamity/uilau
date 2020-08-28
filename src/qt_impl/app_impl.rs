@@ -168,7 +168,6 @@ impl AppTrait for App {
         let mut obj = Object::new_from_uri_clip(&util::random_name_for_layer(), clip);
         obj.set_start(gst::USECOND * (dst_time_ms * 1000.0) as u64);
         let obj = Arc::new(Mutex::new(obj));
-        println!("yooo");
         project.add_object_to_layer(&obj, dst_layer_id as usize);
 
       }
@@ -470,8 +469,6 @@ impl AppTrait for App {
 
 impl App {
   fn setup() -> (Project, gst::Element) {
-    // let playbin = gst::ElementFactory::make("playbin", None).unwrap();
-    // playbin.set_property("uri", &glib::Value::from("file:///usr/share/big-buck-bunny_trailer.webm")).unwrap();
     let proj = Self::setup_sample_project();
 
     let sink = gst::ElementFactory::make("qmlglsink", None).unwrap();
@@ -482,9 +479,6 @@ impl App {
     sinkbin
       .set_property("sink", &sink.to_value())
       .unwrap();
-    // playbin
-    //   .set_property("video-sink", &sinkbin.to_value())
-    //   .unwrap();
 
     (proj, sink)
   }
@@ -509,18 +503,6 @@ impl App {
 
     proj.add_layer();
 
-    // let effect = ges::Effect::new("agingtv").expect("Failed to create effect");
-    // clip.add(&effect).unwrap();
-  
-    // let asset = clip.get_asset().unwrap();
-    // let duration = asset
-    //   .downcast::<ges::UriClipAsset>()
-    //   .unwrap()
-    //   .get_duration();
-    //
-    // clip.set_inpoint(duration / 2);
-    // clip.set_duration(duration / 4);
-  
     proj
   }
 
