@@ -413,7 +413,7 @@ ApplicationWindow {
             model: app.objects
             delegate: timelineObject
           }
-          
+
           // TimelineObject
           Component {
             id: timelineObject
@@ -697,7 +697,7 @@ ApplicationWindow {
 
     standardButtons: StandardButton.Save | StandardButton.Cancel
 
-    property string objectName: ""
+    property string objName: ""
 
     Grid {
       columns: 2
@@ -715,9 +715,7 @@ ApplicationWindow {
         stepSize: 1
 
         onMoved: {
-          console.log(xSlider.value)
-          app.timelineSetObjectX(objectName, xSlider.value)
-          app.timelineApplyObjectFilter(objectName, "alpha method=blue")
+          app.timelineSetObjectX(timelineConfigureObjectDialog.objName, xSlider.value)
         }
       }
 
@@ -785,11 +783,12 @@ ApplicationWindow {
     }
 
     onAccepted: {
-      app.timelineApplyObjectFilter(objectName, "alpha method=blue")
+      // app.timelineApplyObjectFilter(objName, "alpha method=blue")
     }
 
-    function openDialog(objectName) {
-      this.objectName = objectName
+    function openDialog(objName) {
+      console.log("wowowowow: " + objName)
+      this.objName = objName
       this.open()
     }
   }

@@ -400,7 +400,65 @@ impl AppTrait for App {
     let obj = project.get_object_by_name(&obj_name).unwrap();
     let obj = &*obj.lock().unwrap();
 
-    // todo: find applied filters
+    match &obj.content {
+      ObjectContent::Clip { clip } => {
+        // get track
+        let tracks = project.ges_timeline.get_tracks();
+        let mut track: Option<ges::Track> = None;
+        for t in tracks {
+          let prop = t.get_property("track-type").unwrap();
+          println!("track type: {:?}", prop.get::<ges::TrackType>());
+          match prop.get::<ges::TrackType>().unwrap() {
+            Some(ges::TrackType::VIDEO) => {
+              track = Some(t);
+              break;
+            }
+            _ => {}
+          }
+        }
+
+        // see: http://gstreamer-devel.966125.n4.nabble.com/GES-resizing-and-positioning-clips-td4666919.html
+        let track = track.expect("No video tracks found");
+        let track_el = clip.find_track_element(Some(&track), glib::types::Type::Unit);
+        match track_el {
+          Some(track_el) => {
+            println!("track element: {:?}", track_el);
+            track_el.set_child_property("posx", &x).unwrap();
+          },
+          None => panic!("Unreachable")
+        }
+
+        // let effects = clip.get_top_effects();
+        // let mut videobox: Option<ges::TrackElement> = None;
+        // for effect in effects {
+        //   println!("name: {}", effect.get_name().unwrap());
+        //   // todo: internal name convention for effects? + avoid hard-coding
+        //   if effect.get_name().unwrap() == "uilau_default_videobox" {
+        //     videobox = Some(effect);
+        //   }
+        // }
+        //
+        // let desc = format!("videobox border-alpha=0 left={}", -x);
+        // println!("{}", desc);
+        // match videobox {
+        //   Some(vbox) => {
+        //     vbox.set_property("bin-description", &desc);
+        //   },
+        //   None => {
+        //     let effect = ges::Effect::new(&desc).expect("Failed to create effect");
+        //     clip.add(&effect).unwrap();
+        //     effect.set_name(Some("uilau_default_videobox")).unwrap();
+        //   }
+        // }
+      },
+      ObjectContent::Text { clip } => {
+        panic!("at the disco")
+      },
+      _ => panic!("unimplemented")
+    }
+
+    project.pause();
+    project.ges_timeline.commit();
   }
 }
 
