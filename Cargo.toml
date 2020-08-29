@@ -37,6 +37,7 @@ gstreamer-editing-services = { path = "../../gstreamer-rs/gstreamer-editing-serv
 libc = "*"
 gstreamer-sys = "*"
 gobject-sys = "0.10.0"
+libloading = "0.6.3"
 
 [build-dependencies]
 rust_qt_binding_generator = "0.3.5"
