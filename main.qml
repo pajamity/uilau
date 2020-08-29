@@ -407,18 +407,20 @@ ApplicationWindow {
             
           }
 
-          ListView {
+          Repeater {
+          // ListView {
             anchors.fill: parent
             model: app.objects
             delegate: timelineObject
           }
-
+          
           // TimelineObject
           Component {
             id: timelineObject
+
             Rectangle {
               id: timelineObjectRect
-              y: 2 * timeline.layerHeight
+              y: layerId * timeline.layerHeight
               x: startMs / 1000.0 * timeline.pixelPerSecond
               height: timeline.layerHeight
               width: durationMs / 1000.0 * timeline.pixelPerSecond
@@ -427,7 +429,7 @@ ApplicationWindow {
                 GradientStop { position: 1.0; color: "darkblue" }
               }
 
-              // objectName in QML is not related to TimelineObject
+              // "object"Name in QML is not related to TimelineObject
               property string objectName: name 
               
               Text {

@@ -129,14 +129,16 @@ impl AppTrait for App {
   }
 
   fn move_timeline_object(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32) {
+    println!("Moving object to: {}", dst_layer_id);
+
     {
       let project = &mut *self.project.lock().unwrap();
+      project.print_objects();
 
       project.move_object_to_layer(&obj_name, dst_layer_id as usize);
       let obj = project.get_object_by_name(&obj_name).unwrap();
       let obj = &mut *obj.lock().unwrap();
       obj.set_start(gst::USECOND * ((dst_time_ms * 1000.0) as u64));
-
       // todo: 一時停止しないとcommitで時々フリーズする(大きな動画？)
       project.pause();
       println!("committing...");
@@ -148,6 +150,8 @@ impl AppTrait for App {
   }
 
   fn timeline_add_file_object(&mut self, file_urls: String, dst_layer_id: u64, dst_time_ms: f32) {
+    println!("Adding object to: {}", dst_layer_id);
+
     let project = &mut *self.project.lock().unwrap();
 
     let len = {
@@ -232,14 +236,10 @@ impl AppTrait for App {
   }
 
   fn timeline_configure_filter(&mut self, obj_name: String, dst_layer_id: u64, dst_time_ms: f32) {
-    {
-      let project = &mut *self.project.lock().unwrap();
-      if obj_name.is_empty() { // New Text object
-        let len = {
-          let objects = &*project.objects.lock().unwrap();
-          objects.len()
-        };
+    println!("Adding filter object to: {}", dst_layer_id);
 
+    {
+      if obj_name.is_empty() { // New Text object
         // let video_desc= "alpha method=green";
         let video_desc = "agingtv";
 
@@ -254,9 +254,17 @@ impl AppTrait for App {
         obj.set_start(gst::USECOND * (dst_time_ms * 1000.0) as u64);
         let obj = Arc::new(Mutex::new(obj));
 
-        &self.objects.model.begin_insert_rows(len, len); // Notify Qt
-        project.add_object_to_layer(&obj, dst_layer_id as usize);
-        &self.objects.model.end_insert_rows();
+        {
+          let project = &mut *self.project.lock().unwrap();
+          let len = {
+            let objects = &*project.objects.lock().unwrap();
+            objects.len()
+          };
+
+          &self.objects.model.begin_insert_rows(len, len); // Notify Qt
+          project.add_object_to_layer(&obj, dst_layer_id as usize);
+        }
+        &self.objects.model.end_insert_rows(); // Note that this will call TimelineObject's methods and lock the project at second hand
 
         let obj = &*obj.lock().unwrap();
         match &obj.content {
@@ -273,6 +281,9 @@ impl AppTrait for App {
       } else {
         // todo: if object already exists
       }
+    }
+    {
+      let project = &mut *self.project.lock().unwrap();
       project.pause();
       project.ges_timeline.commit();
     }

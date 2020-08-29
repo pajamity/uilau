@@ -74,10 +74,14 @@ impl TimelineObjectsTrait for TimelineObjects {
   fn layer_id(&self, index: usize) -> u64 {
     let obj = self.get_obj(index).unwrap();
     let obj = &*obj.lock().unwrap();
+    println!("hello");
     let project = self.project.as_ref().unwrap().upgrade().unwrap();
     let project = &*project.lock().unwrap();
+    println!("yo");
     if let Some(layer) = &obj.layer {
       let layer = layer.upgrade().unwrap();
+      println!("returning layer id: {}", project.find_layer_idx(&layer).unwrap() as u64
+      );
       project.find_layer_idx(&layer).unwrap() as u64
     } else {
       9999999 // todo

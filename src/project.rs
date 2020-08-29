@@ -247,4 +247,20 @@ impl Project {
     self.playing = false;
     // todo: when does GESPipeline's state change automatically (without user actions?)
   }
+
+  // Debug
+  pub fn print_objects(&self) {
+    let objects = &*self.objects.lock().unwrap();
+    for obj in objects {
+      let obj = &*obj.lock().unwrap();
+      let layer = obj.layer.as_ref().unwrap().upgrade();
+      let layer = match layer {
+        Some(layer) => layer,
+        None => panic!()
+      };
+      let name = &*obj.name.lock().unwrap();
+
+      println!("Obj {}: {:?}, ", name, self.find_layer_idx(&layer));
+    }
+  }
 }
