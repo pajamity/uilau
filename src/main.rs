@@ -11,12 +11,11 @@ mod project;
 mod object;
 mod layer;
 mod util;
+mod plugin;
+mod plugin_manager;
 
-use glib::translate::{ToGlib, FromGlib};
 use gst::prelude::*;
 use ges::prelude::*;
-
-use std::sync::{Arc, Mutex};
 
 use qt_impl::*;
 use interface::*;

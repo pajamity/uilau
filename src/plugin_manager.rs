@@ -14,10 +14,6 @@ use super::object::{ObjectContent, Object};
 use super::layer::Layer;
 use crate::util;
 
-pub trait Plugin {
-
-}
-
 pub struct PluginManager {
   pub plugins: Arc<Mutex<Vec<Arc<Mutex<Plugin>>>>>,
 }
