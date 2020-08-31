@@ -109,35 +109,35 @@ impl Object {
   pub fn set_start(&mut self, val: gst::ClockTime) {
     *self.start.lock().unwrap() = val;
 
-    match &self.content {
-      ObjectContent::Clip { clip} => {
+    match self.get_clip() {
+      Some(clip) => {
         clip.set_start(val);
-      },
-      ObjectContent::Text { clip } => {
-        clip.set_start(val);
-      },
-      ObjectContent::Filter { clip } => {
-        clip.set_start(val);
-      },
-      _ => {}
+      }
+      None => {}
     }
   }
 
   pub fn set_duration(&mut self, val: gst::ClockTime) {
     *self.duration.lock().unwrap() = val;
 
-    match &self.content {
-      ObjectContent::Clip { clip} => {
+    match self.get_clip() {
+      Some(clip) => {
         clip.set_duration(val);
       },
-      ObjectContent::Text { clip } => {
-        clip.set_duration(val);
-      },
-      ObjectContent::Filter { clip } => {
-        clip.set_duration(val);
-      },
-      _ => {}
+      None => {}
     }
   }
+
+  // use this when calling common methods of GESClips.
+  // todo: we can better with Generics?
+  pub fn get_clip(&self) -> Option<&ges::Clip> {
+    match &self.content {
+      ObjectContent::Clip { clip } => Some(clip.upcast_ref::<ges::Clip>()),
+      ObjectContent::Text { clip } => Some(clip.upcast_ref::<ges::Clip>()),
+      ObjectContent::Filter { clip } => Some(clip.upcast_ref::<ges::Clip>()),
+      _ => None
+    }
+  }
+
 }
 

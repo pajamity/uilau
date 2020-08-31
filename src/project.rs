@@ -184,17 +184,9 @@ impl Project {
     let l = &*layer.lock().unwrap();
 
     obj.set_layer(&layer);
-    match &obj.content {
-      ObjectContent::Clip { clip } => {
-        l.ges_layer.add_clip(clip).unwrap();
-      },
-      ObjectContent::Text { clip } => {
-        l.ges_layer.add_clip(clip).unwrap();
-      },
-      ObjectContent::Filter { clip } => {
-        l.ges_layer.add_clip(clip).unwrap();
-      },
-      _ => {}
+    match obj.get_clip() {
+      Some(clip) => l.ges_layer.add_clip(clip).unwrap(),
+      None => {}
     }
   }
 
@@ -212,23 +204,13 @@ impl Project {
     let dst_layer = self.get_layer_or_create(layer_idx);
     obj.set_layer(&dst_layer);
 
-    match &obj.content {
-      ObjectContent::Clip { clip } => {
+    match obj.get_clip() {
+      Some(clip) => {
         let dst = &*dst_layer.lock().unwrap();
         src.ges_layer.remove_clip(clip).unwrap();
         dst.ges_layer.add_clip(clip).unwrap();
       },
-      ObjectContent::Text { clip } => {
-        let dst = &*dst_layer.lock().unwrap();
-        src.ges_layer.remove_clip(clip).unwrap();
-        dst.ges_layer.add_clip(clip).unwrap();
-      },
-      ObjectContent::Filter { clip } => {
-        let dst = &*dst_layer.lock().unwrap();
-        src.ges_layer.remove_clip(clip).unwrap();
-        dst.ges_layer.add_clip(clip).unwrap();
-      },
-      _ => {}
+      None => {}
     }
   }
 

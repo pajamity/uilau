@@ -318,9 +318,8 @@ impl AppTrait for App {
 
       println!("Start: {}, Duration: {}, Diff: {}", inpoint_ms, new_len, diff);
 
-      match &obj.content {
-        // change inpoint and duration
-        ObjectContent::Clip { clip } => {
+      match obj.get_clip() {
+        Some(clip) => {
           let new_inpoint = if (diff > 0) {
             clip.get_inpoint() + gst::MSECOND * diff as u64
           } else {
@@ -328,23 +327,7 @@ impl AppTrait for App {
           };
           clip.set_inpoint(new_inpoint);
         },
-        ObjectContent::Text { clip } => {
-          let new_inpoint = if (diff > 0) {
-            clip.get_inpoint() + gst::MSECOND * diff as u64
-          } else {
-            clip.get_inpoint() - gst::MSECOND * (-diff as u64)
-          };
-          clip.set_inpoint(new_inpoint);
-        },
-        ObjectContent::Filter { clip } => {
-          let new_inpoint = if (diff > 0) {
-            clip.get_inpoint() + gst::MSECOND * diff as u64
-          } else {
-            clip.get_inpoint() - gst::MSECOND * (-diff as u64)
-          };
-          clip.set_inpoint(new_inpoint);
-        },
-        _ => {}
+        None => {}
       }
 
       project.pause();
@@ -384,17 +367,9 @@ impl AppTrait for App {
 
     let effect = ges::Effect::new(&description).unwrap();
 
-    match &obj.content {
-      ObjectContent::Clip { clip } => {
-        clip.add(&effect).unwrap();
-      },
-      ObjectContent::Filter { clip } => {
-        clip.add(&effect).unwrap();
-      },
-      ObjectContent::Text { clip } => {
-        clip.add(&effect).unwrap();
-      },
-      _ => panic!("unimplemented")
+    match obj.get_clip() {
+      Some(clip) => clip.add(&effect).unwrap(),
+      None => unimplemented!()
     }
 
     project.ges_timeline.commit_sync();
