@@ -12,6 +12,7 @@ use crate::ffi::*;
 use crate::project::*;
 use crate::object::{Object, ObjectContent};
 use crate::util;
+use crate::plugin_manager::{PluginManager};
 
 use super::*;
 
@@ -27,21 +28,23 @@ pub struct App {
   layers: Layers,
   objects: TimelineObjects,
 
-  // GStreamer
+  // GStreamer/uilau
   pub project: Arc<Mutex<Project>>,
   pub sink: Arc<gst::Element>,
+  pub plugin_manager: PluginManager,
 }
 
 impl AppTrait for App {
   fn new(emit: AppEmitter, layers: Layers, objects: TimelineObjects) -> Self {
-    let (project, sink) = Self::setup();
+    let (project, sink, plugin_manager) = Self::setup();
 
     let mut s = Self {
       emit,
       project: Arc::new(Mutex::new(project)),
       layers,
       objects,
-      sink: Arc::new(sink)
+      sink: Arc::new(sink),
+      plugin_manager,
     };
 
     s.layers.set_project(&s.project);
@@ -443,7 +446,7 @@ impl AppTrait for App {
 }
 
 impl App {
-  fn setup() -> (Project, gst::Element) {
+  fn setup() -> (Project, gst::Element, PluginManager) {
     let proj = Self::setup_sample_project();
 
     let sink = gst::ElementFactory::make("qmlglsink", None).unwrap();
@@ -455,7 +458,10 @@ impl App {
       .set_property("sink", &sink.to_value())
       .unwrap();
 
-    (proj, sink)
+    let mut manager = PluginManager::new("/usr/share/uilau");
+    manager.find_plugins();
+
+    (proj, sink, manager)
   }
 
   fn create_sample_clip() -> ges::UriClip {

@@ -7,7 +7,7 @@ use ges::prelude::*;
 extern crate libloading;
 extern crate mlua;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use super::object::{ObjectContent, Object};
@@ -27,39 +27,23 @@ pub enum PluginKind {
 }
 
 pub trait Plugin {
-  fn new(&mut self, path: &str) -> Self;
+  // fn new(&mut self, path: &str) -> Self;
   fn execute(&mut self, obj: &Arc<Mutex<Object>>);
 
   fn get_name(&self) -> String;
   fn get_kind(&self) -> PluginKind;
 }
 
+pub type BoxedPlugin = Box<dyn Plugin>;
+
 pub struct LuaPlugin {
-  name: String,
-  path: Path,
+  pub name: String,
+  pub path: PathBuf,
+  pub source: String,
 }
 
 impl LuaPlugin {
-
-}
-
-impl Plugin for LuaPlugin {
-  fn new(&mut self, path: Path) -> Self {
-    // parse Lua
-
-    // todo: make use of @
-
-    let name = path.file_stem().unwrap().to_str().unwrap().to_string();
-
-
-    Self {
-      name,
-      path,
-
-    }
-  }
-
-  fn execute(&mut self, obj: &Arc<Mutex<Object>>) -> mlua::Result<()> {
+  fn execute_lua(&mut self, obj: &Arc<Mutex<Object>>) -> mlua::Result<()> {
     let lua = mlua::Lua::new();
     let globals = lua.globals();
 
@@ -76,12 +60,70 @@ impl Plugin for LuaPlugin {
 
     // todo: other globals e.g. debug_print
 
-    // globals.set()
+    let name = self.name.clone();
+    let debug_print = lua.create_function(move|_, (s): (String)| {
+      println!("Debug Message from {}: {}", name, s);
+      Ok(())
+    })?;
+    globals.set("debug_print", debug_print)?;
 
+    // todo: consult mlua doc to find out which Rust type to represent Lua numbers
+    let shift = lua.create_function(|_, (a, n): (i32, i32)| {
+      Ok((a << n))
+    })?;
+    globals.set("SHIFT", shift);
+
+    let or = lua.create_function(|_, (a,b): (i32, i32)| {
+      Ok((a | b))
+    })?;
+    globals.set("OR", or);
+
+    let and = lua.create_function(|_, (a,b): (i32, i32)| {
+      Ok((a & b))
+    })?;
+    globals.set("AND", and);
+
+    let xor = lua.create_function(|_, (a,b): (i32, i32)| {
+      Ok((a ^ b))
+    })?;
+    globals.set("XOR", xor);
+
+    let rgb = lua.create_function(|_, (r,g,b): (i32, i32, i32)| {
+      let hex = r << 16 | g << 8 | b;
+      Ok((hex))
+    })?;
+    globals.set("RGB", rgb);
+
+    let irgb = lua.create_function(|_, (col): (i32)| {
+      let r = (col & 0xff0000) >> 16;
+      let g = (col & 0x00ff00) >> 8;
+      let b = (col & 0x00ffff);
+      Ok((r, g, b))
+    })?;
+    globals.set("RGB", irgb);
+
+    lua.load(&self.source)
+      .set_name(&self.name)?
+      .exec()?;
+
+    Ok(())
+  }
+}
+
+impl Plugin for LuaPlugin {
+  fn execute(&mut self, obj: &Arc<Mutex<Object>>) {
+    match self.execute_lua(obj) {
+      Ok(_) => {
+        println!("lua script was executed successfully");
+      },
+      Err(err) => {
+        println!("lua execution error: {}", err);
+      }
+    }
   }
 
   fn get_name(&self) -> String {
-
+    self.name.clone()
   }
 
   fn get_kind(&self) -> PluginKind {
